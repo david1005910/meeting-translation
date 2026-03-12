@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  password     String
+  name         String?
+  meetings     Meeting[]
+  settings     UserSettings?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Meeting {
+  id            String         @id @default(uuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  company       String?
+  language      String
+  mode          String
+  status        String         @default("preparing")
+  participants  String[]
+  audioPath     String?
+  transcript    Transcript?
+  minutes       Minutes?
+  interpretLogs InterpretLog[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+}
+
+model Transcript {
+  id        String   @id @default(uuid())
+  meetingId String   @unique
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  segments  Json
+  rawText   String
+  createdAt DateTime @default(now())
+}
+
+model Minutes {
+  id        String    @id @default(uuid())
+  meetingId String    @unique
+  meeting   Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  content   String
+  editedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model InterpretLog {
+  id         String   @id @default(uuid())
+  meetingId  String
+  meeting    Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  timestamp  Float
+  original   String
+  translated String
+  createdAt  DateTime @default(now())
+}
+
+model UserSettings {
+  userId          String   @id
+  user            User     @relation(fields: [userId], references: [id])
+  defaultLanguage String   @default("en")
+  autoDeleteAudio Boolean  @default(false)
+  minutesTemplate String   @default("standard")
+  updatedAt       DateTime @updatedAt
+}
