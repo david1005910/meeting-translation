@@ -5,7 +5,7 @@ import { TranslationItem } from '../types'
 
 const CHUNK_INTERVAL_MS = 5000 // 5초마다 완전한 WebM 파일로 전송
 
-function sendBlob(socket: Socket, blob: Blob, meetingId: string, language: string) {
+function sendBlob(socket: Socket, blob: Blob, meetingId: string, language: string, targetLanguage?: string) {
   if (blob.size < 1000) return // 너무 작은 청크 무시
   const reader = new FileReader()
   reader.onload = () => {
@@ -15,12 +15,13 @@ function sendBlob(socket: Socket, blob: Blob, meetingId: string, language: strin
       language,
       audioBase64: base64,
       timestamp: Date.now(),
+      ...(targetLanguage && { targetLanguage }),
     })
   }
   reader.readAsDataURL(blob)
 }
 
-export function useRealtimeInterpret(meetingId: string, language: string) {
+export function useRealtimeInterpret(meetingId: string, language: string, targetLanguage?: string) {
   const [isActive, setIsActive] = useState(false)
   const [items, setItems] = useState<TranslationItem[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -47,12 +48,12 @@ export function useRealtimeInterpret(meetingId: string, language: string) {
 
     recorder.onstop = () => {
       const blob = new Blob(chunks, { type: mimeType || 'audio/webm' })
-      sendBlob(socket, blob, meetingId, language)
+      sendBlob(socket, blob, meetingId, language, targetLanguage)
     }
 
     recorder.start()
     return recorder
-  }, [meetingId, language])
+  }, [meetingId, language, targetLanguage])
 
   const start = useCallback(async () => {
     setError(null)

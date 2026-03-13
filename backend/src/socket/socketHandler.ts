@@ -28,6 +28,7 @@ export function setupSocketHandlers(io: Server): void {
       language: string;
       audioBase64: string;
       timestamp: number;
+      targetLanguage?: string;
     }) => {
       try {
         const tmpDir = '/tmp';
@@ -43,21 +44,16 @@ export function setupSocketHandlers(io: Server): void {
         if (!transcript.rawText.trim()) return;
 
         if (data.language === 'ko') {
-          // Korean → EN / ZH / VI simultaneously
-          const [en, zh, vi] = await Promise.all([
-            claudeService.translateFromKorean(transcript.rawText, 'en'),
-            claudeService.translateFromKorean(transcript.rawText, 'zh'),
-            claudeService.translateFromKorean(transcript.rawText, 'vi'),
-          ]);
-          for (const [lang, translated] of [['en', en], ['zh', zh], ['vi', vi]] as const) {
-            socket.emit('translation-result', {
-              timestamp: data.timestamp,
-              original: transcript.rawText,
-              translated,
-              targetLanguage: lang,
-              meetingId: data.meetingId,
-            });
-          }
+          // Korean → selected target language only
+          const lang = data.targetLanguage || 'zh';
+          const translated = await claudeService.translateFromKorean(transcript.rawText, lang);
+          socket.emit('translation-result', {
+            timestamp: data.timestamp,
+            original: transcript.rawText,
+            translated,
+            targetLanguage: lang,
+            meetingId: data.meetingId,
+          });
         } else {
           // Foreign → Korean (original behavior)
           const translated = await claudeService.translate(transcript.rawText, data.language);

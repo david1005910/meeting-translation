@@ -20,43 +20,36 @@ export default function InterpretMode() {
   const { data: meeting } = useMeeting(meetingId!)
 
   const [direction, setDirection] = useState<Direction>('to-ko')
+  const [targetLang, setTargetLang] = useState<string>('zh')   // to-foreign 선택 언어
   const [ttsEnabled, setTtsEnabled] = useState(true)
-  const [ttsTargetLang, setTtsTargetLang] = useState<string>('zh')
   const [saving, setSaving] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
 
   const sourceLanguage = direction === 'to-ko' ? (meeting?.language || 'en') : 'ko'
+  const resolvedTarget = direction === 'to-foreign' ? targetLang : undefined
 
-  const { isActive, items, error: interpretError, start, stop } = useRealtimeInterpret(meetingId!, sourceLanguage)
+  const { isActive, items, error: interpretError, start, stop } = useRealtimeInterpret(
+    meetingId!, sourceLanguage, resolvedTarget
+  )
 
   const leftPanelRef = useRef<HTMLDivElement>(null)
   const rightPanelRef = useRef<HTMLDivElement>(null)
   const lastSpokenId = useRef<string>('')
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [isSpeaking, setIsSpeaking] = useState(false)
 
   // TTS: OpenAI TTS API로 번역문 음성 출력
   const speak = useCallback(async (text: string, lang: string) => {
     if (!ttsEnabled || direction !== 'to-foreign') return
     try {
-      // 이전 재생 중지
-      if (audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current = null
-      }
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
       setIsSpeaking(true)
       const res = await audioApi.tts(text, lang)
       const blob = new Blob([res.data], { type: 'audio/mpeg' })
       const url = URL.createObjectURL(blob)
       const audio = new Audio(url)
       audioRef.current = audio
-      audio.onended = () => {
-        URL.revokeObjectURL(url)
-        setIsSpeaking(false)
-      }
-      audio.onerror = () => {
-        URL.revokeObjectURL(url)
-        setIsSpeaking(false)
-      }
+      audio.onended = () => { URL.revokeObjectURL(url); setIsSpeaking(false) }
+      audio.onerror = () => { URL.revokeObjectURL(url); setIsSpeaking(false) }
       audio.play()
     } catch {
       setIsSpeaking(false)
@@ -64,22 +57,17 @@ export default function InterpretMode() {
   }, [ttsEnabled, direction])
 
   useEffect(() => {
-    if (leftPanelRef.current) {
-      leftPanelRef.current.scrollTop = leftPanelRef.current.scrollHeight
-    }
-    if (rightPanelRef.current) {
-      rightPanelRef.current.scrollTop = rightPanelRef.current.scrollHeight
-    }
+    if (leftPanelRef.current) leftPanelRef.current.scrollTop = leftPanelRef.current.scrollHeight
+    if (rightPanelRef.current) rightPanelRef.current.scrollTop = rightPanelRef.current.scrollHeight
 
-    // Speak the latest translation for the selected target language
     if (direction === 'to-foreign' && items.length > 0) {
       const last = items[items.length - 1]
-      if (last.id !== lastSpokenId.current && last.targetLanguage === ttsTargetLang) {
+      if (last.id !== lastSpokenId.current) {
         lastSpokenId.current = last.id
-        speak(last.translated, ttsTargetLang)
+        speak(last.translated, targetLang)
       }
     }
-  }, [items, direction, ttsTargetLang, speak])
+  }, [items, direction, targetLang, speak])
 
   const handleEnd = async () => {
     stop()
@@ -105,15 +93,7 @@ export default function InterpretMode() {
     if (!isActive) setDirection(d => d === 'to-ko' ? 'to-foreign' : 'to-ko')
   }
 
-  // In to-foreign mode, group items by targetLanguage
-  const foreignItems = direction === 'to-foreign'
-    ? (['en', 'zh', 'vi'] as const).map(lang => ({
-        lang,
-        items: items.filter(i => i.targetLanguage === lang),
-      }))
-    : []
-
-  // Original items for left panel (unique by timestamp+original)
+  // to-foreign 모드에서 왼쪽 패널 원문 중복 제거
   const originItems: TranslationItem[] = direction === 'to-foreign'
     ? items.filter((item, idx, arr) =>
         arr.findIndex(i => i.original === item.original && i.timestamp === item.timestamp) === idx
@@ -132,7 +112,7 @@ export default function InterpretMode() {
             <span className="text-sm text-gray-400">
               {direction === 'to-ko'
                 ? <>{meeting?.language && langLabel[meeting.language]} → 🇰🇷 한국어</>
-                : <>🇰🇷 한국어 → {langLabel.en} / {langLabel.zh} / {langLabel.vi}</>
+                : <>🇰🇷 한국어 → {langLabel[targetLang]}</>
               }
             </span>
           </div>
@@ -144,7 +124,6 @@ export default function InterpretMode() {
               통역 중
             </span>
           )}
-          {/* Direction toggle */}
           <button
             onClick={handleToggleDirection}
             disabled={isActive}
@@ -165,44 +144,52 @@ export default function InterpretMode() {
         </div>
       </header>
 
-      {/* TTS controls (to-foreign mode only) */}
+      {/* to-foreign 설정 바: 언어 선택 + TTS 토글 */}
       {direction === 'to-foreign' && (
-        <div className="flex items-center gap-4 px-6 py-2 bg-gray-900 border-b border-gray-800">
-          <span className="text-xs text-gray-500">음성 출력</span>
-          <button
-            onClick={() => setTtsEnabled(e => !e)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1 rounded-lg transition-colors"
-            style={{
-              background: ttsEnabled ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.05)',
-              color: ttsEnabled ? '#a78bfa' : '#6b7280',
-            }}
-          >
-            {ttsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-            {ttsEnabled ? '켜짐' : '꺼짐'}
-          </button>
-          {ttsEnabled && (
-            <div className="flex gap-1">
-              {(['en', 'zh', 'vi'] as const).map(lang => (
-                <button
-                  key={lang}
-                  onClick={() => setTtsTargetLang(lang)}
-                  className="text-xs px-3 py-1 rounded-lg font-medium transition-colors"
-                  style={{
-                    background: ttsTargetLang === lang ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.05)',
-                    color: ttsTargetLang === lang ? '#c4b5fd' : '#6b7280',
-                    border: ttsTargetLang === lang ? '1px solid rgba(139,92,246,0.5)' : '1px solid transparent',
-                  }}
-                >
-                  {langLabel[lang]}
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="flex items-center gap-4 px-6 py-3 bg-gray-900 border-b border-gray-800">
+          <span className="text-xs text-gray-500 shrink-0">번역 언어</span>
+          <div className="flex gap-2">
+            {(['en', 'zh', 'vi'] as const).map(lang => (
+              <button
+                key={lang}
+                onClick={() => { if (!isActive) setTargetLang(lang) }}
+                disabled={isActive}
+                className="text-sm px-4 py-1.5 rounded-lg font-medium transition-all"
+                style={{
+                  background: targetLang === lang ? 'linear-gradient(135deg,#a78bfa,#8b5cf6)' : 'rgba(255,255,255,0.05)',
+                  color: targetLang === lang ? '#fff' : '#6b7280',
+                  boxShadow: targetLang === lang ? '0 4px 12px rgba(139,92,246,0.35)' : 'none',
+                  cursor: isActive ? 'not-allowed' : 'pointer',
+                  opacity: isActive && targetLang !== lang ? 0.4 : 1,
+                }}
+              >
+                {langLabel[lang]}
+              </button>
+            ))}
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-xs text-gray-500">음성 출력</span>
+            <button
+              onClick={() => setTtsEnabled(e => !e)}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
+              style={{
+                background: ttsEnabled ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.05)',
+                color: ttsEnabled ? '#a78bfa' : '#6b7280',
+              }}
+            >
+              {ttsEnabled
+                ? isSpeaking
+                  ? <><span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" /><span>출력 중</span></>
+                  : <><Volume2 className="w-3.5 h-3.5" /><span>켜짐</span></>
+                : <><VolumeX className="w-3.5 h-3.5" /><span>꺼짐</span></>
+              }
+            </button>
+          </div>
         </div>
       )}
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left panel: original */}
+        {/* 왼쪽: 원문 */}
         <div ref={leftPanelRef} className="flex-1 overflow-y-auto p-4 border-r border-gray-800">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 sticky top-0 bg-gray-950 py-1">
             원문
@@ -220,60 +207,32 @@ export default function InterpretMode() {
           ))}
         </div>
 
-        {/* Right panel */}
-        {direction === 'to-ko' ? (
-          <div ref={rightPanelRef} className="flex-1 overflow-y-auto p-4">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 sticky top-0 bg-gray-950 py-1">
-              🇰🇷 한국어 번역
-            </h2>
-            {items.map((item) => (
+        {/* 오른쪽: 번역 */}
+        <div ref={rightPanelRef} className="flex-1 overflow-y-auto p-4">
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 sticky top-0 bg-gray-950 py-1">
+            {direction === 'to-ko' ? '🇰🇷 한국어 번역' : `${langLabel[targetLang]} 번역`}
+          </h2>
+          {items.map((item) => (
+            direction === 'to-ko' ? (
               <div key={item.id} className="mb-4 p-3 rounded-lg bg-blue-950 border border-blue-800">
                 <div className="text-xs text-blue-400 mb-1">
                   {new Date(item.timestamp).toLocaleTimeString('ko-KR')}
                 </div>
                 <p className="text-blue-50 text-lg leading-relaxed">{item.translated}</p>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div ref={rightPanelRef} className="flex-1 overflow-y-auto p-4">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 sticky top-0 bg-gray-950 py-1">
-              번역 결과
-            </h2>
-            {foreignItems.map(({ lang, items: langItems }) => (
-              <div key={lang} className="mb-6">
-                <div
-                  className="text-xs font-semibold mb-2 px-2 py-1 rounded inline-flex items-center gap-1"
-                  style={{
-                    background: ttsTargetLang === lang && ttsEnabled ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.05)',
-                    color: ttsTargetLang === lang && ttsEnabled ? '#a78bfa' : '#6b7280',
-                  }}
-                >
-                  {langLabel[lang]}
-                  {ttsEnabled && ttsTargetLang === lang && (
-                    isSpeaking
-                      ? <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse ml-1" />
-                      : <Volume2 className="w-3 h-3 ml-1" />
-                  )}
+            ) : (
+              <div key={item.id} className="mb-4 p-3 rounded-lg bg-gray-900 border border-purple-900">
+                <div className="text-xs text-purple-400 mb-1">
+                  {new Date(item.timestamp).toLocaleTimeString('ko-KR')}
                 </div>
-                {langItems.length === 0 && (
-                  <p className="text-gray-700 text-xs ml-2">대기 중...</p>
-                )}
-                {langItems.map((item) => (
-                  <div key={item.id} className="mb-3 p-3 rounded-lg bg-gray-900 border border-gray-800">
-                    <div className="text-xs text-gray-600 mb-1">
-                      {new Date(item.timestamp).toLocaleTimeString('ko-KR')}
-                    </div>
-                    <p className="text-white leading-relaxed">{item.translated}</p>
-                  </div>
-                ))}
+                <p className="text-white text-lg leading-relaxed">{item.translated}</p>
               </div>
-            ))}
-            {items.length === 0 && !isActive && (
-              <p className="text-gray-600 text-sm">통역 시작 버튼을 눌러 시작하세요.</p>
-            )}
-          </div>
-        )}
+            )
+          ))}
+          {items.length === 0 && !isActive && direction === 'to-foreign' && (
+            <p className="text-gray-600 text-sm">통역 시작 버튼을 눌러 시작하세요.</p>
+          )}
+        </div>
       </div>
 
       {interpretError && (
