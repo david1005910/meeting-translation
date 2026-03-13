@@ -23,11 +23,11 @@ function sendBlob(socket: Socket, blob: Blob, meetingId: string, language: strin
 export function useRealtimeInterpret(meetingId: string, language: string) {
   const [isActive, setIsActive] = useState(false)
   const [items, setItems] = useState<TranslationItem[]>([])
+  const [error, setError] = useState<string | null>(null)
   const socketRef = useRef<Socket | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
-  const { token } = useAuthStore()
 
   // 새 MediaRecorder를 시작하고 CHUNK_INTERVAL_MS 후 완성된 파일을 전송
   const startChunkRecorder = useCallback((stream: MediaStream, socket: Socket) => {
@@ -55,7 +55,10 @@ export function useRealtimeInterpret(meetingId: string, language: string) {
   }, [meetingId, language])
 
   const start = useCallback(async () => {
+    setError(null)
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+    // 항상 최신 토큰 사용 (토큰 갱신 후 stale closure 방지)
+    const token = useAuthStore.getState().token
     const socket = io(apiUrl, { auth: { token } })
     socketRef.current = socket
 
@@ -66,7 +69,9 @@ export function useRealtimeInterpret(meetingId: string, language: string) {
     })
 
     socket.on('translation-error', (data: { message: string }) => {
-      console.error('[통역 오류]', data.message)
+      setError(data.message)
+      // 3초 후 자동 소거
+      setTimeout(() => setError(null), 3000)
     })
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -89,7 +94,7 @@ export function useRealtimeInterpret(meetingId: string, language: string) {
     }, CHUNK_INTERVAL_MS)
 
     setIsActive(true)
-  }, [meetingId, language, token, startChunkRecorder])
+  }, [meetingId, startChunkRecorder])
 
   const stop = useCallback(() => {
     if (intervalRef.current) {
@@ -105,5 +110,5 @@ export function useRealtimeInterpret(meetingId: string, language: string) {
     setIsActive(false)
   }, [meetingId])
 
-  return { isActive, items, start, stop }
+  return { isActive, items, error, start, stop }
 }

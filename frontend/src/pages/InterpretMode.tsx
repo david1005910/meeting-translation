@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Mic, MicOff, Maximize2, ArrowLeft, Save, Volume2, VolumeX, ArrowRightLeft } from 'lucide-react'
 import { useRealtimeInterpret } from '../hooks/useRealtimeInterpret'
 import { useMeeting } from '../hooks/useMeetings'
-import { audioApi } from '../services/api'
+import { audioApi, meetingsApi } from '../services/api'
 import { TranslationItem } from '../types'
 
 const langLabel: Record<string, string> = {
@@ -32,7 +32,7 @@ export default function InterpretMode() {
 
   const sourceLanguage = direction === 'to-ko' ? (meeting?.language || 'en') : 'ko'
 
-  const { isActive, items, start, stop } = useRealtimeInterpret(meetingId!, sourceLanguage)
+  const { isActive, items, error: interpretError, start, stop } = useRealtimeInterpret(meetingId!, sourceLanguage)
 
   const leftPanelRef = useRef<HTMLDivElement>(null)
   const rightPanelRef = useRef<HTMLDivElement>(null)
@@ -77,6 +77,7 @@ export default function InterpretMode() {
           translated: item.translated,
           targetLanguage: item.targetLanguage,
         })))
+        await meetingsApi.update(meetingId!, { status: 'completed' })
       } finally {
         setSaving(false)
       }
@@ -254,6 +255,12 @@ export default function InterpretMode() {
           </div>
         )}
       </div>
+
+      {interpretError && (
+        <div className="flex items-center justify-center px-6 py-2 bg-red-950 border-t border-red-800">
+          <span className="text-red-400 text-sm">⚠️ {interpretError}</span>
+        </div>
+      )}
 
       <div className="flex justify-center items-center gap-4 py-6 bg-gray-900 border-t border-gray-800">
         {!isActive ? (
