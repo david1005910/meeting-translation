@@ -50,6 +50,7 @@ export default function Settings() {
             onChange={(e) => setForm((f) => ({ ...f, defaultLanguage: e.target.value }))}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
+            <option value="ko">🇰🇷 한국어</option>
             <option value="en">🇺🇸 영어</option>
             <option value="zh">🇨🇳 중국어</option>
             <option value="vi">🇻🇳 베트남어</option>

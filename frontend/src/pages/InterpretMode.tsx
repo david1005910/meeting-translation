@@ -7,6 +7,7 @@ import { audioApi, meetingsApi } from '../services/api'
 import { TranslationItem } from '../types'
 
 const langLabel: Record<string, string> = {
+  ko: '🇰🇷 한국어',
   en: '🇺🇸 English',
   zh: '🇨🇳 中文',
   vi: '🇻🇳 Tiếng Việt',
@@ -19,7 +20,10 @@ export default function InterpretMode() {
   const navigate = useNavigate()
   const { data: meeting } = useMeeting(meetingId!)
 
-  const [direction, setDirection] = useState<Direction>('to-ko')
+  // 회의 언어가 한국어면 처음부터 to-foreign 방향 고정
+  const meetingLang = meeting?.language || 'en'
+  const isKoreanMeeting = meetingLang === 'ko'
+  const [direction, setDirection] = useState<Direction>(isKoreanMeeting ? 'to-foreign' : 'to-ko')
   const [targetLang, setTargetLang] = useState<string>('zh')   // to-foreign 선택 언어
   const [ttsEnabled, setTtsEnabled] = useState(true)
   const [ttsVolume, setTtsVolume] = useState(3.0)   // 0.0 ~ 4.0 (GainNode)
@@ -27,7 +31,7 @@ export default function InterpretMode() {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [playingId, setPlayingId] = useState<string | null>(null)
 
-  const sourceLanguage = direction === 'to-ko' ? (meeting?.language || 'en') : 'ko'
+  const sourceLanguage = direction === 'to-ko' ? meetingLang : 'ko'
   const resolvedTarget = direction === 'to-foreign' ? targetLang : undefined
 
   const { isActive, items, error: interpretError, start, stop, clearItems } = useRealtimeInterpret(
@@ -156,7 +160,7 @@ export default function InterpretMode() {
             <h1 className="text-lg font-bold">{meeting?.title || '실시간 통역'}</h1>
             <span className="text-sm text-gray-400">
               {direction === 'to-ko'
-                ? <>{meeting?.language && langLabel[meeting.language]} → 🇰🇷 한국어</>
+                ? <>{langLabel[meetingLang] || meetingLang} → 🇰🇷 한국어</>
                 : <>🇰🇷 한국어 → {langLabel[targetLang]}</>
               }
             </span>
@@ -169,20 +173,22 @@ export default function InterpretMode() {
               통역 중
             </span>
           )}
-          <button
-            onClick={handleToggleDirection}
-            disabled={isActive}
-            title={isActive ? '통역 중에는 방향 변경 불가' : '통역 방향 전환'}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-            style={{
-              background: isActive ? 'rgba(255,255,255,0.05)' : 'rgba(139,92,246,0.15)',
-              color: isActive ? '#4b5563' : '#a78bfa',
-              cursor: isActive ? 'not-allowed' : 'pointer',
-            }}
-          >
-            <ArrowRightLeft className="w-4 h-4" />
-            {direction === 'to-ko' ? '외국어→한국어' : '한국어→외국어'}
-          </button>
+          {!isKoreanMeeting && (
+            <button
+              onClick={handleToggleDirection}
+              disabled={isActive}
+              title={isActive ? '통역 중에는 방향 변경 불가' : '통역 방향 전환'}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                background: isActive ? 'rgba(255,255,255,0.05)' : 'rgba(139,92,246,0.15)',
+                color: isActive ? '#4b5563' : '#a78bfa',
+                cursor: isActive ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <ArrowRightLeft className="w-4 h-4" />
+              {direction === 'to-ko' ? '외국어→한국어' : '한국어→외국어'}
+            </button>
+          )}
           <button onClick={() => document.documentElement.requestFullscreen?.()}>
             <Maximize2 className="w-5 h-5 text-gray-400 hover:text-white" />
           </button>

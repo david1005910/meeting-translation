@@ -4,6 +4,7 @@ interface Props {
 }
 
 const languages = [
+  { code: 'ko', label: '한국어', flag: '🇰🇷' },
   { code: 'en', label: '영어', flag: '🇺🇸' },
   { code: 'zh', label: '중국어', flag: '🇨🇳' },
   { code: 'vi', label: '베트남어', flag: '🇻🇳' },

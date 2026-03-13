@@ -17,6 +17,7 @@ export default function Dashboard() {
 
   const stats = {
     total: meetings?.length || 0,
+    ko: meetings?.filter((m) => m.language === 'ko').length || 0,
     en: meetings?.filter((m) => m.language === 'en').length || 0,
     zh: meetings?.filter((m) => m.language === 'zh').length || 0,
     vi: meetings?.filter((m) => m.language === 'vi').length || 0,
@@ -46,9 +47,10 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-5 gap-4 mb-8">
         {[
           { label: '전체 회의', value: stats.total },
+          { label: '🇰🇷 한국어', value: stats.ko },
           { label: '🇺🇸 영어', value: stats.en },
           { label: '🇨🇳 중국어', value: stats.zh },
           { label: '🇻🇳 베트남어', value: stats.vi },

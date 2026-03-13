@@ -3,7 +3,7 @@ import { FileText, Mic, Trash2 } from 'lucide-react'
 import { Meeting } from '../../types'
 import { useDeleteMeeting } from '../../hooks/useMeetings'
 
-const langLabel: Record<string, string> = { en: '🇺🇸 영어', zh: '🇨🇳 중국어', vi: '🇻🇳 베트남어' }
+const langLabel: Record<string, string> = { ko: '🇰🇷 한국어', en: '🇺🇸 영어', zh: '🇨🇳 중국어', vi: '🇻🇳 베트남어' }
 
 const statusStyle: Record<string, { label: string; bg: string; color: string }> = {
   preparing:   { label: '준비중', bg: '#f1f5f9', color: '#a0aec0' },
