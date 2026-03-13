@@ -17,24 +17,17 @@ export default function Sidebar() {
     <aside
       className="w-56 flex flex-col"
       style={{
-        background: 'linear-gradient(180deg, #353A44 0%, #2B3038 50%, #222830 100%)',
-        borderRight: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: 'inset -1px 0 0 rgba(0,0,0,0.4), 4px 0 16px rgba(0,0,0,0.3)',
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        boxShadow: '4px 0px 24px rgba(149, 157, 165, 0.12)',
       }}
     >
       {/* Logo */}
       <div
         className="flex items-center gap-2 px-5 py-5"
-        style={{
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)',
-        }}
+        style={{ borderBottom: '1px solid rgba(149,157,165,0.15)' }}
       >
-        <Mic className="w-6 h-6" style={{ color: '#4FC3F7' }} />
-        <span
-          className="text-lg font-bold tracking-tight"
-          style={{ color: '#F0F0F0', letterSpacing: '-0.02em' }}
-        >
+        <Mic className="w-6 h-6" style={{ color: '#8b5cf6' }} />
+        <span className="text-lg font-semibold" style={{ color: '#4a5568', letterSpacing: '-0.01em' }}>
           MultiMeet
         </span>
       </div>
@@ -50,14 +43,18 @@ export default function Sidebar() {
             style={({ isActive }) =>
               isActive
                 ? {
-                    background: 'linear-gradient(90deg, #2C4F6A 0%, #355E82 50%, #3C6E96 100%)',
-                    color: '#F0F0F0',
-                    borderTop: '1px solid rgba(255,255,255,0.12)',
-                    borderBottom: '1px solid rgba(0,0,0,0.3)',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2)',
+                    background: 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)',
+                    color: '#ffffff',
+                    borderRadius: '12px',
+                    margin: '2px 8px',
+                    padding: '10px 16px',
+                    boxShadow: '0px 6px 20px rgba(139, 92, 246, 0.25)',
                   }
                 : {
-                    color: '#A8B0BA',
+                    color: '#a0aec0',
+                    borderRadius: '12px',
+                    margin: '2px 8px',
+                    padding: '10px 16px',
                   }
             }
           >
@@ -70,19 +67,20 @@ export default function Sidebar() {
       {/* Logout */}
       <button
         onClick={() => { logout(); navigate('/login') }}
-        className="flex items-center gap-3 px-5 py-4 text-sm transition-all"
+        className="flex items-center gap-3 mx-2 mb-3 px-4 py-3 text-sm transition-all"
         style={{
-          color: '#A8B0BA',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          color: '#a0aec0',
+          borderRadius: '12px',
           background: 'transparent',
+          border: 'none',
         }}
         onMouseEnter={e => {
-          (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'
-          ;(e.currentTarget as HTMLElement).style.color = '#F0F0F0'
+          (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, #fafbfc 0%, #f1f5f9 100%)'
+          ;(e.currentTarget as HTMLElement).style.color = '#4a5568'
         }}
         onMouseLeave={e => {
           (e.currentTarget as HTMLElement).style.background = 'transparent'
-          ;(e.currentTarget as HTMLElement).style.color = '#A8B0BA'
+          ;(e.currentTarget as HTMLElement).style.color = '#a0aec0'
         }}
       >
         <LogOut className="w-4 h-4" />
