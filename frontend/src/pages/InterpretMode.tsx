@@ -22,6 +22,7 @@ export default function InterpretMode() {
   const [direction, setDirection] = useState<Direction>('to-ko')
   const [targetLang, setTargetLang] = useState<string>('zh')   // to-foreign 선택 언어
   const [ttsEnabled, setTtsEnabled] = useState(true)
+  const [ttsVolume, setTtsVolume] = useState(1.5)   // 0.0 ~ 2.0 (GainNode)
   const [saving, setSaving] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
 
@@ -35,26 +36,47 @@ export default function InterpretMode() {
   const leftPanelRef = useRef<HTMLDivElement>(null)
   const rightPanelRef = useRef<HTMLDivElement>(null)
   const lastSpokenId = useRef<string>('')
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const ttsAudioCtxRef = useRef<AudioContext | null>(null)
+  const ttsSourceRef = useRef<AudioBufferSourceNode | null>(null)
 
-  // TTS: OpenAI TTS API로 번역문 음성 출력
+  // TTS: OpenAI TTS + GainNode으로 볼륨 증폭 (최대 2배)
   const speak = useCallback(async (text: string, lang: string) => {
     if (!ttsEnabled || direction !== 'to-foreign') return
     try {
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+      // 이전 재생 중지
+      ttsSourceRef.current?.stop()
+      ttsAudioCtxRef.current?.close()
+      ttsAudioCtxRef.current = null
+      ttsSourceRef.current = null
       setIsSpeaking(true)
+
       const res = await audioApi.tts(text, lang)
-      const blob = new Blob([res.data], { type: 'audio/mpeg' })
-      const url = URL.createObjectURL(blob)
-      const audio = new Audio(url)
-      audioRef.current = audio
-      audio.onended = () => { URL.revokeObjectURL(url); setIsSpeaking(false) }
-      audio.onerror = () => { URL.revokeObjectURL(url); setIsSpeaking(false) }
-      audio.play()
+      const arrayBuffer = await (res.data as Blob).arrayBuffer()
+
+      const audioCtx = new AudioContext()
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
+      const source = audioCtx.createBufferSource()
+      source.buffer = audioBuffer
+
+      const gainNode = audioCtx.createGain()
+      gainNode.gain.value = ttsVolume  // 1.0 = 100%, 2.0 = 200%
+      source.connect(gainNode)
+      gainNode.connect(audioCtx.destination)
+
+      ttsAudioCtxRef.current = audioCtx
+      ttsSourceRef.current = source
+
+      source.onended = () => {
+        audioCtx.close()
+        ttsAudioCtxRef.current = null
+        ttsSourceRef.current = null
+        setIsSpeaking(false)
+      }
+      source.start()
     } catch {
       setIsSpeaking(false)
     }
-  }, [ttsEnabled, direction])
+  }, [ttsEnabled, direction, ttsVolume])
 
   useEffect(() => {
     if (leftPanelRef.current) leftPanelRef.current.scrollTop = leftPanelRef.current.scrollHeight
@@ -71,7 +93,8 @@ export default function InterpretMode() {
 
   const handleEnd = async () => {
     stop()
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+    ttsSourceRef.current?.stop()
+    ttsAudioCtxRef.current?.close()
     if (items.length > 0) {
       setSaving(true)
       try {
@@ -167,11 +190,10 @@ export default function InterpretMode() {
               </button>
             ))}
           </div>
-          <div className="ml-auto flex items-center gap-2">
-            <span className="text-xs text-gray-500">음성 출력</span>
+          <div className="ml-auto flex items-center gap-3">
             <button
               onClick={() => setTtsEnabled(e => !e)}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors shrink-0"
               style={{
                 background: ttsEnabled ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.05)',
                 color: ttsEnabled ? '#a78bfa' : '#6b7280',
@@ -184,6 +206,23 @@ export default function InterpretMode() {
                 : <><VolumeX className="w-3.5 h-3.5" /><span>꺼짐</span></>
               }
             </button>
+            {ttsEnabled && (
+              <div className="flex items-center gap-2">
+                <VolumeX className="w-3 h-3 text-gray-600" />
+                <input
+                  type="range"
+                  min={0.5}
+                  max={2.0}
+                  step={0.1}
+                  value={ttsVolume}
+                  onChange={(e) => setTtsVolume(Number(e.target.value))}
+                  className="w-24 accent-purple-500"
+                  title={`볼륨 ${Math.round(ttsVolume * 100)}%`}
+                />
+                <Volume2 className="w-3.5 h-3.5 text-gray-400" />
+                <span className="text-xs text-gray-500 w-9 text-right">{Math.round(ttsVolume * 100)}%</span>
+              </div>
+            )}
           </div>
         </div>
       )}
