@@ -42,14 +42,32 @@ export function setupSocketHandlers(io: Server): void {
 
         if (!transcript.rawText.trim()) return;
 
-        const translated = await claudeService.translate(transcript.rawText, data.language);
-
-        socket.emit('translation-result', {
-          timestamp: data.timestamp,
-          original: transcript.rawText,
-          translated,
-          meetingId: data.meetingId,
-        });
+        if (data.language === 'ko') {
+          // Korean → EN / ZH / VI simultaneously
+          const [en, zh, vi] = await Promise.all([
+            claudeService.translateFromKorean(transcript.rawText, 'en'),
+            claudeService.translateFromKorean(transcript.rawText, 'zh'),
+            claudeService.translateFromKorean(transcript.rawText, 'vi'),
+          ]);
+          for (const [lang, translated] of [['en', en], ['zh', zh], ['vi', vi]] as const) {
+            socket.emit('translation-result', {
+              timestamp: data.timestamp,
+              original: transcript.rawText,
+              translated,
+              targetLanguage: lang,
+              meetingId: data.meetingId,
+            });
+          }
+        } else {
+          // Foreign → Korean (original behavior)
+          const translated = await claudeService.translate(transcript.rawText, data.language);
+          socket.emit('translation-result', {
+            timestamp: data.timestamp,
+            original: transcript.rawText,
+            translated,
+            meetingId: data.meetingId,
+          });
+        }
       } catch (error: any) {
         console.error('[Socket] 처리 오류:', error);
         socket.emit('translation-error', { message: '번역 처리 중 오류가 발생했습니다.' });

@@ -44,6 +44,27 @@ export class ClaudeService {
 
     return res.choices[0].message.content ?? '';
   }
+
+  // Korean → EN/ZH/VI (used in to-foreign interpret mode)
+  async translateFromKorean(text: string, targetLanguage: string): Promise<string> {
+    const targetNames: Record<string, string> = {
+      en: 'English',
+      zh: 'Simplified Chinese',
+      vi: 'Vietnamese',
+    };
+    const langName = targetNames[targetLanguage] || targetLanguage;
+    const system = `You are a professional interpreter. Translate the Korean text to ${langName} in a natural business tone. Output only the translation, no explanations.`;
+
+    const res = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: text },
+      ],
+    });
+
+    return res.choices[0].message.content ?? '';
+  }
 }
 
 export const claudeService = new ClaudeService();

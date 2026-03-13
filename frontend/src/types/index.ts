@@ -50,4 +50,5 @@ export interface TranslationItem {
   timestamp: number
   original: string
   translated: string
+  targetLanguage?: string  // set when source is Korean (to-foreign mode)
 }
