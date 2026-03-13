@@ -6,6 +6,25 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
+// Whisper가 무음/배경음에서 생성하는 알려진 환각 문구
+const WHISPER_HALLUCINATIONS = [
+  '시청해주셔서 감사합니다',
+  '구독과 좋아요 부탁드립니다',
+  '구독해주세요',
+  '좋아요와 구독',
+  'thank you for watching',
+  'thanks for watching',
+  'please subscribe',
+  'like and subscribe',
+  'MBC 뉴스',
+];
+
+function isHallucination(text: string): boolean {
+  const lower = text.trim().toLowerCase();
+  if (lower.length < 2) return true;
+  return WHISPER_HALLUCINATIONS.some((h) => lower.includes(h.toLowerCase()));
+}
+
 export function setupSocketHandlers(io: Server): void {
   io.use((socket, next) => {
     const token = socket.handshake.auth.token;
@@ -42,6 +61,7 @@ export function setupSocketHandlers(io: Server): void {
         fs.unlinkSync(tmpPath);
 
         if (!transcript.rawText.trim()) return;
+        if (isHallucination(transcript.rawText)) return;
 
         if (data.language === 'ko') {
           // Korean → selected target language only

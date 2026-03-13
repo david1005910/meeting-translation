@@ -3,10 +3,12 @@ import { io, Socket } from 'socket.io-client'
 import { useAuthStore } from '../stores/authStore'
 import { TranslationItem } from '../types'
 
-const CHUNK_INTERVAL_MS = 5000 // 5초마다 완전한 WebM 파일로 전송
+const CHUNK_INTERVAL_MS = 5000
+// RMS 0~1 범위에서 이 값 이상이면 유효한 발화로 판단
+const AUDIO_RMS_THRESHOLD = 0.015
 
 function sendBlob(socket: Socket, blob: Blob, meetingId: string, language: string, targetLanguage?: string) {
-  if (blob.size < 1000) return // 너무 작은 청크 무시
+  if (blob.size < 1000) return
   const reader = new FileReader()
   reader.onload = () => {
     const base64 = (reader.result as string).split(',')[1]
@@ -25,12 +27,19 @@ export function useRealtimeInterpret(meetingId: string, language: string, target
   const [isActive, setIsActive] = useState(false)
   const [items, setItems] = useState<TranslationItem[]>([])
   const [error, setError] = useState<string | null>(null)
+
   const socketRef = useRef<Socket | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const audioPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // 현재 5초 윈도우에 유효한 발화가 있었는지
+  const windowHasAudioRef = useRef(false)
+  // onstop 시점에 실제 전송 여부를 전달하는 ref
+  const shouldSendRef = useRef(true)
 
-  // 새 MediaRecorder를 시작하고 CHUNK_INTERVAL_MS 후 완성된 파일을 전송
   const startChunkRecorder = useCallback((stream: MediaStream, socket: Socket) => {
     const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
       ? 'audio/webm;codecs=opus'
@@ -47,6 +56,7 @@ export function useRealtimeInterpret(meetingId: string, language: string, target
     }
 
     recorder.onstop = () => {
+      if (!shouldSendRef.current) return // 무음 윈도우 → 전송 건너뜀
       const blob = new Blob(chunks, { type: mimeType || 'audio/webm' })
       sendBlob(socket, blob, meetingId, language, targetLanguage)
     }
@@ -58,7 +68,6 @@ export function useRealtimeInterpret(meetingId: string, language: string, target
   const start = useCallback(async () => {
     setError(null)
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-    // 항상 최신 토큰 사용 (토큰 갱신 후 stale closure 방지)
     const token = useAuthStore.getState().token
     const socket = io(apiUrl, { auth: { token } })
     socketRef.current = socket
@@ -71,22 +80,41 @@ export function useRealtimeInterpret(meetingId: string, language: string, target
 
     socket.on('translation-error', (data: { message: string }) => {
       setError(data.message)
-      // 3초 후 자동 소거
       setTimeout(() => setError(null), 3000)
     })
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     streamRef.current = stream
 
-    // 첫 번째 청크 레코더 시작
+    // AnalyserNode로 실시간 음량 모니터링
+    const audioCtx = new AudioContext()
+    const analyser = audioCtx.createAnalyser()
+    analyser.fftSize = 512
+    audioCtx.createMediaStreamSource(stream).connect(analyser)
+    audioCtxRef.current = audioCtx
+    analyserRef.current = analyser
+    windowHasAudioRef.current = false
+
+    // 100ms마다 RMS 측정 → 유효 발화 감지
+    const dataArray = new Uint8Array(analyser.frequencyBinCount)
+    audioPollRef.current = setInterval(() => {
+      analyser.getByteTimeDomainData(dataArray)
+      const rms = Math.sqrt(
+        dataArray.reduce((s, v) => s + Math.pow((v - 128) / 128, 2), 0) / dataArray.length
+      )
+      if (rms > AUDIO_RMS_THRESHOLD) windowHasAudioRef.current = true
+    }, 100)
+
     startChunkRecorder(stream, socket)
 
-    // CHUNK_INTERVAL_MS마다 레코더를 재시작해 완전한 WebM 파일 생성
     intervalRef.current = setInterval(() => {
+      // 이번 윈도우 전송 여부 확정 후 플래그 리셋
+      shouldSendRef.current = windowHasAudioRef.current
+      windowHasAudioRef.current = false
+
       if (recorderRef.current?.state === 'recording') {
-        recorderRef.current.stop() // onstop에서 전송됨
+        recorderRef.current.stop()
       }
-      // 잠깐 후 새 레코더 시작
       setTimeout(() => {
         if (streamRef.current && socketRef.current) {
           startChunkRecorder(streamRef.current, socketRef.current)
@@ -98,14 +126,13 @@ export function useRealtimeInterpret(meetingId: string, language: string, target
   }, [meetingId, startChunkRecorder])
 
   const stop = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
-    }
-    if (recorderRef.current?.state === 'recording') {
-      recorderRef.current.stop()
-    }
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+    if (audioPollRef.current) { clearInterval(audioPollRef.current); audioPollRef.current = null }
+    if (recorderRef.current?.state === 'recording') recorderRef.current.stop()
     streamRef.current?.getTracks().forEach((t) => t.stop())
+    audioCtxRef.current?.close()
+    audioCtxRef.current = null
+    analyserRef.current = null
     socketRef.current?.emit('leave-session', meetingId)
     socketRef.current?.disconnect()
     setIsActive(false)
