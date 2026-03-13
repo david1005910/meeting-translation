@@ -83,7 +83,7 @@ export default function NewMeeting() {
           <div className="grid grid-cols-2 gap-3">
             {[
               { mode: 'minutes', icon: FileText, title: '회의록 모드', desc: '녹음 후 AI로 회의록 생성' },
-              { mode: 'interpret', icon: Mic, title: '실시간 통역 모드', desc: '즉시 한국어로 번역' },
+              { mode: 'interpret', icon: Mic, title: '실시간 통역 모드', desc: '외국어↔한국어 양방향 실시간 통역' },
             ].map(({ mode, icon: Icon, title, desc }) => (
               <button
                 key={mode}
