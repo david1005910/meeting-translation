@@ -13,7 +13,7 @@ export default function MinutesMode() {
   const { meetingId } = useParams<{ meetingId: string }>()
   const navigate = useNavigate()
   const { data: meeting } = useMeeting(meetingId!)
-  const { token } = useAuthStore()
+
 
   const [step, setStep] = useState<Step>('input')
   const [progress, setProgress] = useState(0)
@@ -74,7 +74,7 @@ export default function MinutesMode() {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
     const response = await fetch(`${apiUrl}/api/meetings/${meetingId}/minutes/generate`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${useAuthStore.getState().token}` },
     })
 
     if (!response.ok) {
