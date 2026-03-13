@@ -6,6 +6,9 @@ import { claudeService } from '../services/claude.service';
 import { exportService } from '../services/export.service';
 import prisma from '../utils/prisma';
 import { getIo } from '../utils/socket';
+import OpenAI from 'openai';
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export const audioController = {
   async upload(req: AuthRequest, res: Response): Promise<void> {
@@ -171,6 +174,29 @@ export const audioController = {
         res.setHeader('Content-Disposition', `attachment; filename="minutes-${meetingId}.md"`);
         res.send(buffer);
       }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  async tts(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { text, language } = req.body as { text: string; language: string };
+      if (!text?.trim()) {
+        res.status(400).json({ error: '텍스트를 입력해주세요.' });
+        return;
+      }
+      // OpenAI TTS는 입력 텍스트 언어를 자동 감지하므로 voice만 지정
+      const mp3 = await openai.audio.speech.create({
+        model: 'tts-1',
+        voice: language === 'zh' ? 'shimmer' : language === 'vi' ? 'nova' : 'alloy',
+        input: text,
+        response_format: 'mp3',
+      });
+      const buffer = Buffer.from(await mp3.arrayBuffer());
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

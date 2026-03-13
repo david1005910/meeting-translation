@@ -13,5 +13,6 @@ router.get('/:meetingId/minutes', audioController.getMinutes);
 router.put('/:meetingId/minutes', audioController.updateMinutes);
 router.get('/:meetingId/minutes/download', audioController.downloadMinutes);
 router.post('/:meetingId/interpret-logs', audioController.saveInterpretLogs);
+router.post('/tts', audioController.tts);
 
 export default router;

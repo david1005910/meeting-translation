@@ -81,6 +81,8 @@ export const audioApi = {
     }),
   saveInterpretLogs: (meetingId: string, logs: Array<{ timestamp: number; original: string; translated: string; targetLanguage?: string }>) =>
     api.post(`/meetings/${meetingId}/interpret-logs`, { logs }),
+  tts: (text: string, language: string) =>
+    api.post('/meetings/tts', { text, language }, { responseType: 'blob' }),
 }
 
 // Settings

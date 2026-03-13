@@ -12,12 +12,6 @@ const langLabel: Record<string, string> = {
   vi: '🇻🇳 Tiếng Việt',
 }
 
-const ttsLang: Record<string, string> = {
-  en: 'en-US',
-  zh: 'zh-CN',
-  vi: 'vi-VN',
-}
-
 type Direction = 'to-ko' | 'to-foreign'
 
 export default function InterpretMode() {
@@ -37,14 +31,36 @@ export default function InterpretMode() {
   const leftPanelRef = useRef<HTMLDivElement>(null)
   const rightPanelRef = useRef<HTMLDivElement>(null)
   const lastSpokenId = useRef<string>('')
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [isSpeaking, setIsSpeaking] = useState(false)
 
-  // TTS: speak new translations in to-foreign mode
-  const speak = useCallback((text: string, lang: string) => {
+  // TTS: OpenAI TTS API로 번역문 음성 출력
+  const speak = useCallback(async (text: string, lang: string) => {
     if (!ttsEnabled || direction !== 'to-foreign') return
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = ttsLang[lang] || 'en-US'
-    window.speechSynthesis.speak(utterance)
+    try {
+      // 이전 재생 중지
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+      setIsSpeaking(true)
+      const res = await audioApi.tts(text, lang)
+      const blob = new Blob([res.data], { type: 'audio/mpeg' })
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
+      audioRef.current = audio
+      audio.onended = () => {
+        URL.revokeObjectURL(url)
+        setIsSpeaking(false)
+      }
+      audio.onerror = () => {
+        URL.revokeObjectURL(url)
+        setIsSpeaking(false)
+      }
+      audio.play()
+    } catch {
+      setIsSpeaking(false)
+    }
   }, [ttsEnabled, direction])
 
   useEffect(() => {
@@ -67,7 +83,7 @@ export default function InterpretMode() {
 
   const handleEnd = async () => {
     stop()
-    window.speechSynthesis.cancel()
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
     if (items.length > 0) {
       setSaving(true)
       try {
@@ -234,7 +250,11 @@ export default function InterpretMode() {
                   }}
                 >
                   {langLabel[lang]}
-                  {ttsEnabled && ttsTargetLang === lang && <Volume2 className="w-3 h-3 ml-1" />}
+                  {ttsEnabled && ttsTargetLang === lang && (
+                    isSpeaking
+                      ? <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse ml-1" />
+                      : <Volume2 className="w-3 h-3 ml-1" />
+                  )}
                 </div>
                 {langItems.length === 0 && (
                   <p className="text-gray-700 text-xs ml-2">대기 중...</p>
