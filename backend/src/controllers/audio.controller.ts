@@ -180,7 +180,7 @@ export const audioController = {
     try {
       const { meetingId } = req.params;
       const { logs } = req.body as {
-        logs: Array<{ timestamp: number; original: string; translated: string }>;
+        logs: Array<{ timestamp: number; original: string; translated: string; targetLanguage?: string }>;
       };
 
       await prisma.interpretLog.createMany({

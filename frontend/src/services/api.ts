@@ -79,7 +79,7 @@ export const audioApi = {
       params: { format },
       responseType: 'blob',
     }),
-  saveInterpretLogs: (meetingId: string, logs: Array<{ timestamp: number; original: string; translated: string }>) =>
+  saveInterpretLogs: (meetingId: string, logs: Array<{ timestamp: number; original: string; translated: string; targetLanguage?: string }>) =>
     api.post(`/meetings/${meetingId}/interpret-logs`, { logs }),
 }
 

@@ -75,6 +75,7 @@ export default function InterpretMode() {
           timestamp: item.timestamp,
           original: item.original,
           translated: item.translated,
+          targetLanguage: item.targetLanguage,
         })))
       } finally {
         setSaving(false)

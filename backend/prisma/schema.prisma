@@ -57,13 +57,14 @@ model Minutes {
 }
 
 model InterpretLog {
-  id         String   @id @default(uuid())
-  meetingId  String
-  meeting    Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  timestamp  Float
-  original   String
-  translated String
-  createdAt  DateTime @default(now())
+  id             String   @id @default(uuid())
+  meetingId      String
+  meeting        Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  timestamp      Float
+  original       String
+  translated     String
+  targetLanguage String?
+  createdAt      DateTime @default(now())
 }
 
 model UserSettings {
