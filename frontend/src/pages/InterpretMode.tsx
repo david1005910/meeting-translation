@@ -22,7 +22,7 @@ export default function InterpretMode() {
   const [direction, setDirection] = useState<Direction>('to-ko')
   const [targetLang, setTargetLang] = useState<string>('zh')   // to-foreign 선택 언어
   const [ttsEnabled, setTtsEnabled] = useState(true)
-  const [ttsVolume, setTtsVolume] = useState(2.0)   // 0.0 ~ 2.0 (GainNode)
+  const [ttsVolume, setTtsVolume] = useState(3.0)   // 0.0 ~ 4.0 (GainNode)
   const [saving, setSaving] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [playingId, setPlayingId] = useState<string | null>(null)
@@ -234,7 +234,7 @@ export default function InterpretMode() {
                 <input
                   type="range"
                   min={0.5}
-                  max={2.0}
+                  max={4.0}
                   step={0.1}
                   value={ttsVolume}
                   onChange={(e) => setTtsVolume(Number(e.target.value))}
