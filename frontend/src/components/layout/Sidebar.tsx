@@ -14,21 +14,51 @@ export default function Sidebar() {
   const navigate = useNavigate()
 
   return (
-    <aside className="w-56 bg-gray-900 text-white flex flex-col">
-      <div className="flex items-center gap-2 px-5 py-5 border-b border-gray-700">
-        <Mic className="w-6 h-6 text-blue-400" />
-        <span className="text-lg font-bold">MultiMeet</span>
+    <aside
+      className="w-56 flex flex-col"
+      style={{
+        background: 'linear-gradient(180deg, #353A44 0%, #2B3038 50%, #222830 100%)',
+        borderRight: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: 'inset -1px 0 0 rgba(0,0,0,0.4), 4px 0 16px rgba(0,0,0,0.3)',
+      }}
+    >
+      {/* Logo */}
+      <div
+        className="flex items-center gap-2 px-5 py-5"
+        style={{
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)',
+        }}
+      >
+        <Mic className="w-6 h-6" style={{ color: '#4FC3F7' }} />
+        <span
+          className="text-lg font-bold tracking-tight"
+          style={{ color: '#F0F0F0', letterSpacing: '-0.02em' }}
+        >
+          MultiMeet
+        </span>
       </div>
-      <nav className="flex-1 py-4">
+
+      {/* Nav */}
+      <nav className="flex-1 py-3">
         {navItems.map(({ to, icon: Icon, label, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-5 py-3 text-sm transition-colors ${
-                isActive ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-              }`
+            className="flex items-center gap-3 px-5 py-3 text-sm transition-all"
+            style={({ isActive }) =>
+              isActive
+                ? {
+                    background: 'linear-gradient(90deg, #2C4F6A 0%, #355E82 50%, #3C6E96 100%)',
+                    color: '#F0F0F0',
+                    borderTop: '1px solid rgba(255,255,255,0.12)',
+                    borderBottom: '1px solid rgba(0,0,0,0.3)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2)',
+                  }
+                : {
+                    color: '#A8B0BA',
+                  }
             }
           >
             <Icon className="w-4 h-4" />
@@ -36,9 +66,24 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Logout */}
       <button
         onClick={() => { logout(); navigate('/login') }}
-        className="flex items-center gap-3 px-5 py-4 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border-t border-gray-700"
+        className="flex items-center gap-3 px-5 py-4 text-sm transition-all"
+        style={{
+          color: '#A8B0BA',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          background: 'transparent',
+        }}
+        onMouseEnter={e => {
+          (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'
+          ;(e.currentTarget as HTMLElement).style.color = '#F0F0F0'
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLElement).style.background = 'transparent'
+          ;(e.currentTarget as HTMLElement).style.color = '#A8B0BA'
+        }}
       >
         <LogOut className="w-4 h-4" />
         로그아웃
