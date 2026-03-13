@@ -27,7 +27,7 @@ export default function InterpretMode() {
 
   const [direction, setDirection] = useState<Direction>('to-ko')
   const [ttsEnabled, setTtsEnabled] = useState(true)
-  const [ttsTargetLang, setTtsTargetLang] = useState<string>('en')
+  const [ttsTargetLang, setTtsTargetLang] = useState<string>('zh')
   const [saving, setSaving] = useState(false)
 
   const sourceLanguage = direction === 'to-ko' ? (meeting?.language || 'en') : 'ko'
