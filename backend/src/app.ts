@@ -10,6 +10,12 @@ import { errorMiddleware } from './middleware/error.middleware';
 
 const app = express();
 
+// Simple request logger
+app.use((req, _res, next) => {
+  console.log(`[HTTP] ${req.method} ${req.path}`);
+  next();
+});
+
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,

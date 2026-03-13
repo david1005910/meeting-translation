@@ -26,8 +26,14 @@ export default function MinutesMode() {
   const waitForTranscript = (): Promise<void> => {
     return new Promise((resolve, reject) => {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-      const socket = io(apiUrl, { auth: { token } })
+      // Read the latest token from the store (may have been refreshed during upload)
+      const currentToken = useAuthStore.getState().token
+      const socket = io(apiUrl, { auth: { token: currentToken }, reconnection: false })
       socketRef.current = socket
+
+      socket.on('connect_error', (err) => {
+        reject(new Error(`소켓 연결 실패: ${err.message}`))
+      })
 
       socket.emit('join-session', meetingId)
 
@@ -107,20 +113,32 @@ export default function MinutesMode() {
       const fileToUpload = file instanceof File
         ? file
         : new File([file], 'recording.webm', { type: 'audio/webm' })
-      await audioApi.upload(meetingId, fileToUpload, setProgress)
+      try {
+        await audioApi.upload(meetingId, fileToUpload, setProgress)
+      } catch (err: any) {
+        throw new Error(`[업로드 실패] ${err.message}`)
+      }
 
       // 2. STT (WebSocket으로 완료 수신)
       setStep('transcribing')
       setProgress(0)
       setStatusMsg('음성을 텍스트로 변환 중... (Whisper AI)')
-      await audioApi.transcribe(meetingId)
-      await waitForTranscript()
+      try {
+        await audioApi.transcribe(meetingId)
+        await waitForTranscript()
+      } catch (err: any) {
+        throw new Error(`[STT 실패] ${err.message}`)
+      }
 
       // 3. 회의록 생성 (SSE 스트림)
       setStep('generating')
       setProgress(0)
       setStatusMsg('AI가 한국어 회의록을 작성 중...')
-      await generateMinutes()
+      try {
+        await generateMinutes()
+      } catch (err: any) {
+        throw new Error(`[회의록 생성 실패] ${err.message}`)
+      }
 
       setStep('done')
       navigate(`/meetings/${meetingId}/minutes/view`)

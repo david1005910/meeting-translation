@@ -63,6 +63,7 @@ export const audioController = {
 
           getIo().to(meetingId).emit('transcribe:complete', { transcript });
         } catch (err: any) {
+          console.error('[Transcribe Error]', err);
           getIo().to(meetingId).emit('transcribe:error', { error: err.message });
         }
       })();

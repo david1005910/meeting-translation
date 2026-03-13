@@ -28,8 +28,13 @@ api.interceptors.response.use(
         return api(original)
       } catch {
         useAuthStore.getState().logout()
+        window.location.href = '/login'
+        return Promise.reject(new Error('세션이 만료되었습니다. 다시 로그인해주세요.'))
       }
     }
+    // Use server error message if available, otherwise Axios default
+    const serverMsg = err.response?.data?.error
+    if (serverMsg) err.message = serverMsg
     return Promise.reject(err)
   }
 )
