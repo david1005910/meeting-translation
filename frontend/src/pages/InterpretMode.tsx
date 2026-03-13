@@ -19,11 +19,17 @@ export default function InterpretMode() {
     meetingId!,
     meeting?.language || 'en'
   )
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const leftPanelRef = useRef<HTMLDivElement>(null)
+  const rightPanelRef = useRef<HTMLDivElement>(null)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (leftPanelRef.current) {
+      leftPanelRef.current.scrollTop = leftPanelRef.current.scrollHeight
+    }
+    if (rightPanelRef.current) {
+      rightPanelRef.current.scrollTop = rightPanelRef.current.scrollHeight
+    }
   }, [items])
 
   const handleEnd = async () => {
@@ -71,7 +77,7 @@ export default function InterpretMode() {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-4 border-r border-gray-800">
+        <div ref={leftPanelRef} className="flex-1 overflow-y-auto p-4 border-r border-gray-800">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 sticky top-0 bg-gray-950 py-1">
             원문
           </h2>
@@ -86,10 +92,9 @@ export default function InterpretMode() {
               <p className="text-white leading-relaxed">{item.original}</p>
             </div>
           ))}
-          <div ref={bottomRef} />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div ref={rightPanelRef} className="flex-1 overflow-y-auto p-4">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 sticky top-0 bg-gray-950 py-1">
             🇰🇷 한국어 번역
           </h2>
