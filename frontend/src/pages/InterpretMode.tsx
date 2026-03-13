@@ -30,7 +30,7 @@ export default function InterpretMode() {
   const sourceLanguage = direction === 'to-ko' ? (meeting?.language || 'en') : 'ko'
   const resolvedTarget = direction === 'to-foreign' ? targetLang : undefined
 
-  const { isActive, items, error: interpretError, start, stop } = useRealtimeInterpret(
+  const { isActive, items, error: interpretError, start, stop, clearItems } = useRealtimeInterpret(
     meetingId!, sourceLanguage, resolvedTarget
   )
 
@@ -131,7 +131,11 @@ export default function InterpretMode() {
   }
 
   const handleToggleDirection = () => {
-    if (!isActive) setDirection(d => d === 'to-ko' ? 'to-foreign' : 'to-ko')
+    if (!isActive) {
+      setDirection(d => d === 'to-ko' ? 'to-foreign' : 'to-ko')
+      clearItems()
+      lastSpokenId.current = ''
+    }
   }
 
   // to-foreign 모드에서 왼쪽 패널 원문 중복 제거
@@ -328,7 +332,7 @@ export default function InterpretMode() {
             className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-8 py-3 rounded-full font-semibold transition-colors"
           >
             <MicOff className="w-5 h-5" />
-            일시정지
+            중지
           </button>
         )}
         <button

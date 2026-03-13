@@ -134,6 +134,13 @@ export function setupSocketHandlers(io: Server): void {
         fs.unlinkSync(tmpPath);
 
         if (!transcript.rawText.trim()) return;
+
+        // no_speech_prob > 0.5 → Whisper 자체가 무음으로 판단
+        if (transcript.avgNoSpeechProb > 0.5) {
+          console.log(`[Socket] 무음 필터 (no_speech_prob=${transcript.avgNoSpeechProb.toFixed(2)}): "${transcript.rawText.trim()}"`);
+          return;
+        }
+
         if (isHallucination(transcript.rawText)) {
           console.log(`[Socket] 환각 필터: "${transcript.rawText.trim()}"`);
           return;

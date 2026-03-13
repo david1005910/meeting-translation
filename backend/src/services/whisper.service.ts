@@ -26,6 +26,7 @@ export interface TranscriptResult {
   segments: TranscriptSegment[];
   rawText: string;
   language: string;
+  avgNoSpeechProb: number;  // 0~1, 높을수록 무음
 }
 
 export class WhisperService {
@@ -56,7 +57,14 @@ export class WhisperService {
       timestamp_granularities: ['segment'],
     });
 
-    const segments: TranscriptSegment[] = (response.segments || []).map((seg, idx) => ({
+    const rawSegments = response.segments || [];
+
+    // no_speech_prob 평균 계산 (무음 확률)
+    const avgNoSpeechProb = rawSegments.length > 0
+      ? rawSegments.reduce((sum, seg) => sum + (seg.no_speech_prob ?? 0), 0) / rawSegments.length
+      : 0;
+
+    const segments: TranscriptSegment[] = rawSegments.map((seg, idx) => ({
       id: idx,
       start: seg.start,
       end: seg.end,
@@ -67,6 +75,7 @@ export class WhisperService {
       segments,
       rawText: response.text,
       language: response.language || language,
+      avgNoSpeechProb,
     };
   }
 }

@@ -138,5 +138,7 @@ export function useRealtimeInterpret(meetingId: string, language: string, target
     setIsActive(false)
   }, [meetingId])
 
-  return { isActive, items, error, start, stop }
+  const clearItems = useCallback(() => setItems([]), [])
+
+  return { isActive, items, error, start, stop, clearItems }
 }
