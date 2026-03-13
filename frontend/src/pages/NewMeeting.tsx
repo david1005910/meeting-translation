@@ -1,20 +1,33 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FileText, Mic } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import LanguageSelector from '../components/meeting/LanguageSelector'
 import { useCreateMeeting } from '../hooks/useMeetings'
+import { settingsApi } from '../services/api'
 
 export default function NewMeeting() {
   const navigate = useNavigate()
   const createMutation = useCreateMeeting()
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => settingsApi.get().then((r) => r.data),
+  })
 
   const [form, setForm] = useState({
     title: '',
     company: '',
-    language: 'en',
+    language: 'zh',
     mode: 'minutes',
     participants: [''],
   })
+
+  // Apply user's default language from settings (only on initial load)
+  useEffect(() => {
+    if (settings?.defaultLanguage) {
+      setForm((f) => ({ ...f, language: settings.defaultLanguage }))
+    }
+  }, [settings?.defaultLanguage])
   const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {

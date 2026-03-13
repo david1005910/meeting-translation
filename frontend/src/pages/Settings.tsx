@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { settingsApi } from '../services/api'
 
@@ -21,9 +21,18 @@ export default function Settings() {
   })
 
   const [form, setForm] = useState({
-    defaultLanguage: settings?.defaultLanguage || 'en',
-    autoDeleteAudio: settings?.autoDeleteAudio || false,
+    defaultLanguage: 'en',
+    autoDeleteAudio: false,
   })
+
+  useEffect(() => {
+    if (settings) {
+      setForm({
+        defaultLanguage: settings.defaultLanguage,
+        autoDeleteAudio: settings.autoDeleteAudio,
+      })
+    }
+  }, [settings])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
