@@ -5,7 +5,7 @@ import { TranslationItem } from '../types'
 
 const CHUNK_INTERVAL_MS = 5000
 // RMS 0~1 범위에서 이 값 이상이면 유효한 발화로 판단
-const AUDIO_RMS_THRESHOLD = 0.015
+const AUDIO_RMS_THRESHOLD = 0.03
 
 function sendBlob(socket: Socket, blob: Blob, meetingId: string, language: string, targetLanguage?: string) {
   if (blob.size < 1000) return

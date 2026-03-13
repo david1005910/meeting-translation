@@ -6,24 +6,79 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-// Whisper가 무음/배경음에서 생성하는 알려진 환각 문구
-const WHISPER_HALLUCINATIONS = [
-  '시청해주셔서 감사합니다',
-  '구독과 좋아요 부탁드립니다',
+// ──────────────────────────────────────────
+// Whisper 환각(hallucination) 필터
+// ──────────────────────────────────────────
+
+// 1) 부분 문자열 포함 시 환각으로 판정
+const HALLUCINATION_SUBSTRINGS = [
+  // 한국어 변형 (띄어쓰기 무시를 위해 normalize 후 비교)
+  '시청해주셔서감사합니다',
+  '시청해주셔서감사',
+  '봐주셔서감사합니다',
+  '봐주셔서감사',
+  '구독과좋아요',
   '구독해주세요',
-  '좋아요와 구독',
+  '좋아요와구독',
+  '좋아요구독',
+  '알림설정',
+  // 영어
   'thank you for watching',
   'thanks for watching',
   'please subscribe',
   'like and subscribe',
-  'MBC 뉴스',
+  'don\'t forget to subscribe',
 ];
 
-function isHallucination(text: string): boolean {
-  const lower = text.trim().toLowerCase();
-  if (lower.length < 2) return true;
-  return WHISPER_HALLUCINATIONS.some((h) => lower.includes(h.toLowerCase()));
+// 2) 두 키워드가 동시에 등장하면 환각으로 판정
+const HALLUCINATION_PAIRS: [string, string][] = [
+  ['시청', '감사합니다'],
+  ['시청', '감사해요'],
+  ['영상', '감사합니다'],
+  ['영상', '봐주'],
+  ['구독', '좋아요'],
+  ['구독', '감사'],
+];
+
+function normalize(text: string): string {
+  return text.replace(/\s+/g, '').toLowerCase();
 }
+
+function isHallucination(text: string): boolean {
+  const raw = text.trim();
+  if (raw.length < 2) return true;
+
+  const norm = normalize(raw);
+  const lower = raw.toLowerCase();
+
+  // 부분 문자열 검사
+  if (HALLUCINATION_SUBSTRINGS.some((h) => norm.includes(normalize(h)))) return true;
+
+  // 키워드 쌍 검사
+  if (HALLUCINATION_PAIRS.some(([a, b]) => lower.includes(a) && lower.includes(b))) return true;
+
+  return false;
+}
+
+// ──────────────────────────────────────────
+// 소켓별 최근 전사 캐시 (중복 방지)
+// ──────────────────────────────────────────
+const RECENT_CACHE_SIZE = 3;
+const recentTranscripts = new Map<string, string[]>(); // socketId → last N texts
+
+function isDuplicate(socketId: string, text: string): boolean {
+  const norm = normalize(text);
+  const history = recentTranscripts.get(socketId) || [];
+  if (history.some((h) => normalize(h) === norm)) return true;
+
+  // 캐시 갱신
+  history.push(text);
+  if (history.length > RECENT_CACHE_SIZE) history.shift();
+  recentTranscripts.set(socketId, history);
+  return false;
+}
+
+// ──────────────────────────────────────────
 
 export function setupSocketHandlers(io: Server): void {
   io.use((socket, next) => {
@@ -61,10 +116,16 @@ export function setupSocketHandlers(io: Server): void {
         fs.unlinkSync(tmpPath);
 
         if (!transcript.rawText.trim()) return;
-        if (isHallucination(transcript.rawText)) return;
+        if (isHallucination(transcript.rawText)) {
+          console.log(`[Socket] 환각 필터: "${transcript.rawText.trim()}"`);
+          return;
+        }
+        if (isDuplicate(socket.id, transcript.rawText)) {
+          console.log(`[Socket] 중복 필터: "${transcript.rawText.trim()}"`);
+          return;
+        }
 
         if (data.language === 'ko') {
-          // Korean → selected target language only
           const lang = data.targetLanguage || 'zh';
           const translated = await claudeService.translateFromKorean(transcript.rawText, lang);
           socket.emit('translation-result', {
@@ -75,7 +136,6 @@ export function setupSocketHandlers(io: Server): void {
             meetingId: data.meetingId,
           });
         } else {
-          // Foreign → Korean (original behavior)
           const translated = await claudeService.translate(transcript.rawText, data.language);
           socket.emit('translation-result', {
             timestamp: data.timestamp,
@@ -92,9 +152,11 @@ export function setupSocketHandlers(io: Server): void {
 
     socket.on('leave-session', (meetingId: string) => {
       socket.leave(meetingId);
+      recentTranscripts.delete(socket.id);
     });
 
     socket.on('disconnect', () => {
+      recentTranscripts.delete(socket.id);
       console.log(`[Socket] 해제: ${socket.id}`);
     });
   });

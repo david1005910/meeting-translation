@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Mic, MicOff, Maximize2, ArrowLeft, Save, Volume2, VolumeX, ArrowRightLeft } from 'lucide-react'
+import { Mic, MicOff, Maximize2, ArrowLeft, Save, Volume2, VolumeX, ArrowRightLeft, Play, Square } from 'lucide-react'
 import { useRealtimeInterpret } from '../hooks/useRealtimeInterpret'
 import { useMeeting } from '../hooks/useMeetings'
 import { audioApi, meetingsApi } from '../services/api'
@@ -22,9 +22,10 @@ export default function InterpretMode() {
   const [direction, setDirection] = useState<Direction>('to-ko')
   const [targetLang, setTargetLang] = useState<string>('zh')   // to-foreign 선택 언어
   const [ttsEnabled, setTtsEnabled] = useState(true)
-  const [ttsVolume, setTtsVolume] = useState(1.5)   // 0.0 ~ 2.0 (GainNode)
+  const [ttsVolume, setTtsVolume] = useState(2.0)   // 0.0 ~ 2.0 (GainNode)
   const [saving, setSaving] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const [playingId, setPlayingId] = useState<string | null>(null)
 
   const sourceLanguage = direction === 'to-ko' ? (meeting?.language || 'en') : 'ko'
   const resolvedTarget = direction === 'to-foreign' ? targetLang : undefined
@@ -39,16 +40,15 @@ export default function InterpretMode() {
   const ttsAudioCtxRef = useRef<AudioContext | null>(null)
   const ttsSourceRef = useRef<AudioBufferSourceNode | null>(null)
 
-  // TTS: OpenAI TTS + GainNode으로 볼륨 증폭 (최대 2배)
-  const speak = useCallback(async (text: string, lang: string) => {
-    if (!ttsEnabled || direction !== 'to-foreign') return
+  // 핵심 TTS 재생 함수 (itemId: null이면 자동재생, 있으면 수동재생)
+  const playTts = useCallback(async (text: string, lang: string, itemId: string | null = null) => {
     try {
-      // 이전 재생 중지
       ttsSourceRef.current?.stop()
       ttsAudioCtxRef.current?.close()
       ttsAudioCtxRef.current = null
       ttsSourceRef.current = null
       setIsSpeaking(true)
+      if (itemId) setPlayingId(itemId)
 
       const res = await audioApi.tts(text, lang)
       const arrayBuffer = await (res.data as Blob).arrayBuffer()
@@ -59,7 +59,7 @@ export default function InterpretMode() {
       source.buffer = audioBuffer
 
       const gainNode = audioCtx.createGain()
-      gainNode.gain.value = ttsVolume  // 1.0 = 100%, 2.0 = 200%
+      gainNode.gain.value = ttsVolume
       source.connect(gainNode)
       gainNode.connect(audioCtx.destination)
 
@@ -71,12 +71,30 @@ export default function InterpretMode() {
         ttsAudioCtxRef.current = null
         ttsSourceRef.current = null
         setIsSpeaking(false)
+        setPlayingId(null)
       }
       source.start()
     } catch {
       setIsSpeaking(false)
+      setPlayingId(null)
     }
-  }, [ttsEnabled, direction, ttsVolume])
+  }, [ttsVolume])
+
+  // 자동재생: to-foreign 모드에서 새 번역 도착 시
+  const speak = useCallback((text: string, lang: string) => {
+    if (!ttsEnabled || direction !== 'to-foreign') return
+    playTts(text, lang, null)
+  }, [ttsEnabled, direction, playTts])
+
+  // 수동재생 중지
+  const stopTts = useCallback(() => {
+    ttsSourceRef.current?.stop()
+    ttsAudioCtxRef.current?.close()
+    ttsAudioCtxRef.current = null
+    ttsSourceRef.current = null
+    setIsSpeaking(false)
+    setPlayingId(null)
+  }, [])
 
   useEffect(() => {
     if (leftPanelRef.current) leftPanelRef.current.scrollTop = leftPanelRef.current.scrollHeight
@@ -251,23 +269,38 @@ export default function InterpretMode() {
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 sticky top-0 bg-gray-950 py-1">
             {direction === 'to-ko' ? '🇰🇷 한국어 번역' : `${langLabel[targetLang]} 번역`}
           </h2>
-          {items.map((item) => (
-            direction === 'to-ko' ? (
-              <div key={item.id} className="mb-4 p-3 rounded-lg bg-blue-950 border border-blue-800">
-                <div className="text-xs text-blue-400 mb-1">
-                  {new Date(item.timestamp).toLocaleTimeString('ko-KR')}
+          {items.map((item) => {
+            const isPlaying = playingId === item.id
+            const lang = direction === 'to-ko' ? 'ko' : targetLang
+            const borderColor = direction === 'to-ko' ? 'border-blue-800' : 'border-purple-900'
+            const bgColor = direction === 'to-ko' ? 'bg-blue-950' : 'bg-gray-900'
+            const timeColor = direction === 'to-ko' ? 'text-blue-400' : 'text-purple-400'
+            const textColor = direction === 'to-ko' ? 'text-blue-50' : 'text-white'
+            return (
+              <div key={item.id} className={`mb-4 p-3 rounded-lg ${bgColor} border ${borderColor}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-xs ${timeColor}`}>
+                    {new Date(item.timestamp).toLocaleTimeString('ko-KR')}
+                  </span>
+                  <button
+                    onClick={() => isPlaying ? stopTts() : playTts(item.translated, lang, item.id)}
+                    className="flex items-center gap-1 text-xs px-2 py-0.5 rounded transition-colors"
+                    style={{
+                      background: isPlaying ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.07)',
+                      color: isPlaying ? '#f87171' : '#6b7280',
+                    }}
+                    title={isPlaying ? '중지' : '다시 듣기'}
+                  >
+                    {isPlaying
+                      ? <><Square className="w-3 h-3" /><span>중지</span></>
+                      : <><Play className="w-3 h-3" /><span>재생</span></>
+                    }
+                  </button>
                 </div>
-                <p className="text-blue-50 text-lg leading-relaxed">{item.translated}</p>
-              </div>
-            ) : (
-              <div key={item.id} className="mb-4 p-3 rounded-lg bg-gray-900 border border-purple-900">
-                <div className="text-xs text-purple-400 mb-1">
-                  {new Date(item.timestamp).toLocaleTimeString('ko-KR')}
-                </div>
-                <p className="text-white text-lg leading-relaxed">{item.translated}</p>
+                <p className={`${textColor} text-lg leading-relaxed`}>{item.translated}</p>
               </div>
             )
-          ))}
+          })}
           {items.length === 0 && !isActive && direction === 'to-foreign' && (
             <p className="text-gray-600 text-sm">통역 시작 버튼을 눌러 시작하세요.</p>
           )}

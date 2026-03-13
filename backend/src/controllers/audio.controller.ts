@@ -187,9 +187,13 @@ export const audioController = {
         return;
       }
       // OpenAI TTS는 입력 텍스트 언어를 자동 감지하므로 voice만 지정
+      const voice =
+        language === 'zh' ? 'shimmer' :
+        language === 'vi' ? 'nova' :
+        language === 'ko' ? 'nova' : 'alloy';
       const mp3 = await openai.audio.speech.create({
         model: 'tts-1',
-        voice: language === 'zh' ? 'shimmer' : language === 'vi' ? 'nova' : 'alloy',
+        voice,
         input: text,
         response_format: 'mp3',
       });
