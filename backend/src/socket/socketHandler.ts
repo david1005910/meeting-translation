@@ -10,21 +10,34 @@ import { v4 as uuidv4 } from 'uuid';
 // Whisper 환각(hallucination) 필터
 // ──────────────────────────────────────────
 
-// 1) 부분 문자열 포함 시 환각으로 판정
+// 1) 부분 문자열 포함 시 환각으로 판정 (normalize 후 공백 제거 비교)
 const HALLUCINATION_SUBSTRINGS = [
-  // 한국어 변형 (띄어쓰기 무시를 위해 normalize 후 비교)
+  // 시청/감사 계열
   '시청해주셔서감사합니다',
   '시청해주셔서감사',
   '봐주셔서감사합니다',
   '봐주셔서감사',
+  // 구독 계열
   '구독과좋아요',
   '구독해주세요',
   '좋아요와구독',
   '좋아요구독',
   '알림설정',
+  // YouTube 마무리 계열
+  '다음영상에서만나요',
+  '다음영상에서뵙겠습니다',
+  '여기까지입니다',
+  '영상은여기까지',
+  '이번영상은여기서',
+  '다음번에또만나요',
+  '다음에또만나요',
+  '다음시간에만나요',
   // 영어
   'thank you for watching',
   'thanks for watching',
+  'see you in the next video',
+  'see you next time',
+  'until next time',
   'please subscribe',
   'like and subscribe',
   'don\'t forget to subscribe',
@@ -36,6 +49,11 @@ const HALLUCINATION_PAIRS: [string, string][] = [
   ['시청', '감사해요'],
   ['영상', '감사합니다'],
   ['영상', '봐주'],
+  ['영상', '여기까지'],
+  ['다음', '영상'],
+  ['다음', '만나요'],
+  ['다음', '뵙겠습니다'],
+  ['여기까지', '만나요'],
   ['구독', '좋아요'],
   ['구독', '감사'],
 ];
