@@ -84,6 +84,7 @@ export const audioController = {
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders(); // send headers immediately so client doesn't time out waiting
 
       let fullContent = '';
 

@@ -19,8 +19,9 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowed = ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-m4a', 'audio/webm', 'video/mp4', 'video/webm'];
-  if (allowed.includes(file.mimetype)) {
+  const mime = file.mimetype.split(';')[0].trim(); // strip codec params like "audio/webm;codecs=opus"
+  const allowed = ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-wav', 'audio/x-m4a', 'audio/webm', 'video/mp4', 'video/webm'];
+  if (allowed.includes(mime)) {
     cb(null, true);
   } else {
     cb(new Error('지원하지 않는 파일 형식입니다. (MP3, MP4, WAV, M4A, WebM)'));
