@@ -24,14 +24,15 @@ export default function InterpretMode() {
   const meetingLang = meeting?.language || 'en'
   const isKoreanMeeting = meetingLang === 'ko'
   const [direction, setDirection] = useState<Direction>(isKoreanMeeting ? 'to-foreign' : 'to-ko')
-  const [targetLang, setTargetLang] = useState<string>('zh')   // to-foreign 선택 언어
+  const [sourceLang, setSourceLang] = useState<string>(meetingLang)   // to-ko 선택 언어
+  const [targetLang, setTargetLang] = useState<string>('zh')           // to-foreign 선택 언어
   const [ttsEnabled, setTtsEnabled] = useState(true)
   const [ttsVolume, setTtsVolume] = useState(3.0)   // 0.0 ~ 4.0 (GainNode)
   const [saving, setSaving] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [playingId, setPlayingId] = useState<string | null>(null)
 
-  const sourceLanguage = direction === 'to-ko' ? meetingLang : 'ko'
+  const sourceLanguage = direction === 'to-ko' ? sourceLang : 'ko'
   const resolvedTarget = direction === 'to-foreign' ? targetLang : undefined
 
   const { isActive, items, error: interpretError, start, stop, clearItems } = useRealtimeInterpret(
@@ -100,11 +101,11 @@ export default function InterpretMode() {
     setPlayingId(null)
   }, [])
 
-  // 한국어 회의: 데이터 로드 후 방향 초기화 (to-foreign)
+  // 회의 언어 로드 후 sourceLang 초기화, 한국어 회의는 to-foreign 고정
   useEffect(() => {
-    if (meeting?.language === 'ko' && !isActive) {
-      setDirection('to-foreign')
-    }
+    if (!meeting?.language) return
+    if (meeting.language !== 'ko') setSourceLang(meeting.language)
+    if (meeting.language === 'ko' && !isActive) setDirection('to-foreign')
   }, [meeting?.language, isActive])
 
   useEffect(() => {
@@ -183,7 +184,7 @@ export default function InterpretMode() {
             <h1 className="text-lg font-bold">{meeting?.title || '실시간 통역'}</h1>
             <span className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
               {direction === 'to-ko'
-                ? <>{langLabel[meetingLang] || meetingLang} → 🇰🇷 한국어</>
+                ? <>{langLabel[sourceLang] || sourceLang} → 🇰🇷 한국어</>
                 : <>🇰🇷 한국어 → {langLabel[targetLang]}</>
               }
             </span>
@@ -226,6 +227,30 @@ export default function InterpretMode() {
           borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}
       >
+        {direction === 'to-ko' && (
+          <>
+            <span className="text-xs shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>통역 언어</span>
+            <div className="flex gap-2">
+              {(['zh', 'en', 'vi'] as const).map(lang => (
+                <button
+                  key={lang}
+                  onClick={() => { if (!isActive) { setSourceLang(lang); clearItems() } }}
+                  disabled={isActive}
+                  className="text-sm px-4 py-1.5 rounded-lg font-medium transition-all"
+                  style={{
+                    background: sourceLang === lang ? 'linear-gradient(135deg,#a78bfa,#8b5cf6)' : 'rgba(255,255,255,0.07)',
+                    color: sourceLang === lang ? '#fff' : 'rgba(255,255,255,0.45)',
+                    boxShadow: sourceLang === lang ? '0 4px 12px rgba(139,92,246,0.35)' : 'none',
+                    cursor: isActive ? 'not-allowed' : 'pointer',
+                    opacity: isActive && sourceLang !== lang ? 0.4 : 1,
+                  }}
+                >
+                  {langLabel[lang]}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
         {direction === 'to-foreign' && (
           <>
             <span className="text-xs shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>번역 언어</span>
