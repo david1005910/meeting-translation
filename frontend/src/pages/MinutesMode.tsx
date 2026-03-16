@@ -156,22 +156,44 @@ export default function MinutesMode() {
 
   return (
     <div className="p-8 max-w-2xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">회의록 모드</h1>
-      {meeting && <p className="text-gray-500 mb-6">{meeting.title}</p>}
+      <h1 className="text-2xl font-bold mb-1" style={{ color: '#ffffff' }}>회의록 모드</h1>
+      {meeting && <p className="mb-6" style={{ color: 'rgba(255,255,255,0.6)' }}>{meeting.title}</p>}
 
       {step !== 'input' ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-700 font-semibold mb-1">{statusMsg}</p>
-          <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
+        <div
+          className="p-8 text-center"
+          style={{
+            background: 'rgba(255, 255, 255, 0.12)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            borderRadius: '20px',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.20), inset 0 0 12px rgba(255,255,255,0.06)',
+          }}
+        >
+          <div
+            className="w-16 h-16 rounded-full animate-spin mx-auto mb-4"
+            style={{
+              border: '4px solid rgba(255,255,255,0.2)',
+              borderTopColor: '#ffffff',
+            }}
+          />
+          <p className="font-semibold mb-1" style={{ color: '#ffffff' }}>{statusMsg}</p>
+          <div
+            className="w-full rounded-full h-2 mt-4"
+            style={{ background: 'rgba(255,255,255,0.1)' }}
+          >
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${progress}%` }}
+              className="h-2 rounded-full transition-all duration-500"
+              style={{
+                width: `${progress}%`,
+                background: 'linear-gradient(90deg, #a78bfa, #6366f1)',
+              }}
             />
           </div>
-          <p className="text-gray-400 text-sm mt-2">{progress}%</p>
+          <p className="text-sm mt-2" style={{ color: 'rgba(255,255,255,0.55)' }}>{progress}%</p>
           {step === 'transcribing' && (
-            <p className="text-gray-400 text-xs mt-3">
+            <p className="text-xs mt-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
               음성 길이에 따라 수 분이 소요될 수 있습니다
             </p>
           )}
@@ -183,11 +205,14 @@ export default function MinutesMode() {
               <button
                 key={mode}
                 onClick={() => setInputMode(mode)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  inputMode === mode
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{
+                  background: inputMode === mode ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)',
+                  color: inputMode === mode ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                  border: inputMode === mode ? '1px solid rgba(255,255,255,0.35)' : '1px solid rgba(255,255,255,0.15)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                }}
               >
                 {mode === 'record' ? '🎙️ 직접 녹음' : '📁 파일 업로드'}
               </button>
@@ -201,7 +226,14 @@ export default function MinutesMode() {
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg p-3 text-sm">
+            <div
+              className="p-3 text-sm rounded-lg"
+              style={{
+                background: 'rgba(239,68,68,0.15)',
+                border: '1px solid rgba(239,68,68,0.4)',
+                color: 'rgba(255,255,255,0.8)',
+              }}
+            >
               ⚠️ {error}
             </div>
           )}

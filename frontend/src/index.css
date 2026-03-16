@@ -9,10 +9,10 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
-  background: linear-gradient(145deg, #f0f4f8 0%, #e8eef5 100%);
+  background: linear-gradient(135deg, #1a0533 0%, #0d1b4b 35%, #0a2a4a 65%, #062a3a 100%);
   background-attachment: fixed;
   min-height: 100vh;
-  color: #4a5568;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 ::-webkit-scrollbar {
@@ -20,9 +20,9 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f0f4f8;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c5d0de;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
 }

@@ -4,10 +4,13 @@ import { useMeetings } from '../hooks/useMeetings'
 import { useAuthStore } from '../stores/authStore'
 import MeetingCard from '../components/meeting/MeetingCard'
 
-const softCard = {
-  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+const glassCard = {
+  background: 'rgba(255, 255, 255, 0.14)',
+  backdropFilter: 'blur(16px)',
+  WebkitBackdropFilter: 'blur(16px)',
   borderRadius: '16px',
-  boxShadow: '0px 4px 14px rgba(149, 157, 165, 0.12)',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  boxShadow: '0 4px 24px rgba(0,0,0,0.20), inset 0 0 12px rgba(255,255,255,0.06)',
 }
 
 export default function Dashboard() {
@@ -27,19 +30,19 @@ export default function Dashboard() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-medium" style={{ color: '#4a5568' }}>
+          <h1 className="text-2xl font-medium" style={{ color: '#ffffff' }}>
             안녕하세요, {user?.name || user?.email}님 👋
           </h1>
-          <p className="mt-1" style={{ color: '#a0aec0' }}>오늘도 성공적인 미팅 되세요.</p>
+          <p className="mt-1" style={{ color: 'rgba(255,255,255,0.55)' }}>오늘도 성공적인 미팅 되세요.</p>
         </div>
         <Link
           to="/meetings/new"
           className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-all"
           style={{
-            background: 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)',
+            background: 'linear-gradient(135deg, #a78bfa 0%, #6366f1 100%)',
             color: '#ffffff',
             borderRadius: '12px',
-            boxShadow: '0px 6px 20px rgba(139, 92, 246, 0.25)',
+            boxShadow: '0 6px 20px rgba(139,92,246,0.45)',
           }}
         >
           <Plus className="w-4 h-4" />
@@ -55,21 +58,24 @@ export default function Dashboard() {
           { label: '🇨🇳 중국어', value: stats.zh },
           { label: '🇻🇳 베트남어', value: stats.vi },
         ].map((stat) => (
-          <div key={stat.label} style={{ ...softCard, padding: '20px' }}>
-            <p className="text-sm" style={{ color: '#a0aec0' }}>{stat.label}</p>
-            <p className="text-3xl font-semibold mt-1" style={{ color: '#4a5568' }}>{stat.value}</p>
+          <div key={stat.label} style={{ ...glassCard, padding: '20px' }}>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>{stat.label}</p>
+            <p className="text-3xl font-semibold mt-1" style={{ color: '#ffffff' }}>{stat.value}</p>
           </div>
         ))}
       </div>
 
       <div>
-        <h2 className="text-lg font-medium mb-4" style={{ color: '#4a5568' }}>최근 회의</h2>
+        <h2 className="text-lg font-medium mb-4" style={{ color: 'rgba(255,255,255,0.8)' }}>최근 회의</h2>
         {isLoading ? (
-          <p style={{ color: '#a0aec0' }}>불러오는 중...</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>불러오는 중...</p>
         ) : recent.length === 0 ? (
-          <div className="text-center py-12" style={softCard}>
-            <p className="mb-4" style={{ color: '#a0aec0' }}>아직 회의가 없습니다.</p>
-            <Link to="/meetings/new" style={{ color: '#8b5cf6', fontSize: '14px' }}>
+          <div
+            className="text-center py-12"
+            style={glassCard}
+          >
+            <p className="mb-4" style={{ color: 'rgba(255,255,255,0.55)' }}>아직 회의가 없습니다.</p>
+            <Link to="/meetings/new" style={{ color: '#a78bfa', fontSize: '14px' }}>
               첫 번째 회의를 시작해보세요 →
             </Link>
           </div>

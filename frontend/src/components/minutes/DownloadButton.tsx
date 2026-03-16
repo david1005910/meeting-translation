@@ -26,25 +26,48 @@ export default function DownloadButton({ meetingId, content }: Props) {
     alert('클립보드에 복사되었습니다.')
   }
 
+  const glassButtonStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    background: 'rgba(255, 255, 255, 0.12)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    border: '1px solid rgba(255, 255, 255, 0.25)',
+    borderRadius: '10px',
+    padding: '8px 16px',
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: '14px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  }
+
   return (
     <div className="flex gap-2">
       <button
         onClick={() => download('docx')}
-        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all"
+        style={{
+          background: 'linear-gradient(135deg, #a78bfa 0%, #6366f1 100%)',
+          color: '#ffffff',
+          border: 'none',
+          boxShadow: '0 6px 20px rgba(139,92,246,0.45)',
+          cursor: 'pointer',
+        }}
       >
         <Download className="w-4 h-4" />
         DOCX
       </button>
       <button
         onClick={() => download('md')}
-        className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+        style={glassButtonStyle}
       >
         <Download className="w-4 h-4" />
         Markdown
       </button>
       <button
         onClick={copyToClipboard}
-        className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors"
+        style={glassButtonStyle}
       >
         클립보드 복사
       </button>

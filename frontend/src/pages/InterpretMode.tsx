@@ -150,15 +150,29 @@ export default function InterpretMode() {
     : items
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-white">
-      <header className="flex items-center justify-between px-6 py-4 bg-gray-900 border-b border-gray-800">
+    <div
+      className="flex flex-col h-screen text-white"
+      style={{ background: 'rgba(10,10,20,0.95)' }}
+    >
+      <header
+        className="flex items-center justify-between px-6 py-4"
+        style={{
+          background: 'rgba(255,255,255,0.07)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+        }}
+      >
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/')} className="text-gray-400 hover:text-white">
+          <button onClick={() => navigate('/')} style={{ color: 'rgba(255,255,255,0.5)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#ffffff')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}
+          >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <h1 className="text-lg font-bold">{meeting?.title || '실시간 통역'}</h1>
-            <span className="text-sm text-gray-400">
+            <span className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
               {direction === 'to-ko'
                 ? <>{langLabel[meetingLang] || meetingLang} → 🇰🇷 한국어</>
                 : <>🇰🇷 한국어 → {langLabel[targetLang]}</>
@@ -181,7 +195,7 @@ export default function InterpretMode() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
               style={{
                 background: isActive ? 'rgba(255,255,255,0.05)' : 'rgba(139,92,246,0.15)',
-                color: isActive ? '#4b5563' : '#a78bfa',
+                color: isActive ? 'rgba(255,255,255,0.3)' : '#a78bfa',
                 cursor: isActive ? 'not-allowed' : 'pointer',
               }}
             >
@@ -190,15 +204,21 @@ export default function InterpretMode() {
             </button>
           )}
           <button onClick={() => document.documentElement.requestFullscreen?.()}>
-            <Maximize2 className="w-5 h-5 text-gray-400 hover:text-white" />
+            <Maximize2 className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.5)' }} />
           </button>
         </div>
       </header>
 
       {/* to-foreign 설정 바: 언어 선택 + TTS 토글 */}
       {direction === 'to-foreign' && (
-        <div className="flex items-center gap-4 px-6 py-3 bg-gray-900 border-b border-gray-800">
-          <span className="text-xs text-gray-500 shrink-0">번역 언어</span>
+        <div
+          className="flex items-center gap-4 px-6 py-3"
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <span className="text-xs shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>번역 언어</span>
           <div className="flex gap-2">
             {(['en', 'zh', 'vi'] as const).map(lang => (
               <button
@@ -207,8 +227,8 @@ export default function InterpretMode() {
                 disabled={isActive}
                 className="text-sm px-4 py-1.5 rounded-lg font-medium transition-all"
                 style={{
-                  background: targetLang === lang ? 'linear-gradient(135deg,#a78bfa,#8b5cf6)' : 'rgba(255,255,255,0.05)',
-                  color: targetLang === lang ? '#fff' : '#6b7280',
+                  background: targetLang === lang ? 'linear-gradient(135deg,#a78bfa,#8b5cf6)' : 'rgba(255,255,255,0.07)',
+                  color: targetLang === lang ? '#fff' : 'rgba(255,255,255,0.45)',
                   boxShadow: targetLang === lang ? '0 4px 12px rgba(139,92,246,0.35)' : 'none',
                   cursor: isActive ? 'not-allowed' : 'pointer',
                   opacity: isActive && targetLang !== lang ? 0.4 : 1,
@@ -224,7 +244,7 @@ export default function InterpretMode() {
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors shrink-0"
               style={{
                 background: ttsEnabled ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.05)',
-                color: ttsEnabled ? '#a78bfa' : '#6b7280',
+                color: ttsEnabled ? '#a78bfa' : 'rgba(255,255,255,0.4)',
               }}
             >
               {ttsEnabled
@@ -236,7 +256,7 @@ export default function InterpretMode() {
             </button>
             {ttsEnabled && (
               <div className="flex items-center gap-2">
-                <VolumeX className="w-3 h-3 text-gray-600" />
+                <VolumeX className="w-3 h-3" style={{ color: 'rgba(255,255,255,0.35)' }} />
                 <input
                   type="range"
                   min={0.5}
@@ -247,8 +267,8 @@ export default function InterpretMode() {
                   className="w-24 accent-purple-500"
                   title={`볼륨 ${Math.round(ttsVolume * 100)}%`}
                 />
-                <Volume2 className="w-3.5 h-3.5 text-gray-400" />
-                <span className="text-xs text-gray-500 w-9 text-right">{Math.round(ttsVolume * 100)}%</span>
+                <Volume2 className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.45)' }} />
+                <span className="text-xs w-9 text-right" style={{ color: 'rgba(255,255,255,0.4)' }}>{Math.round(ttsVolume * 100)}%</span>
               </div>
             )}
           </div>
@@ -257,16 +277,30 @@ export default function InterpretMode() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* 왼쪽: 원문 */}
-        <div ref={leftPanelRef} className="flex-1 overflow-y-auto p-4 border-r border-gray-800">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 sticky top-0 bg-gray-950 py-1">
+        <div
+          ref={leftPanelRef}
+          className="flex-1 overflow-y-auto p-4"
+          style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-4 sticky top-0 py-1"
+            style={{
+              color: 'rgba(255,255,255,0.4)',
+              background: 'rgba(10,10,20,0.9)',
+            }}
+          >
             원문
           </h2>
           {originItems.length === 0 && !isActive && (
-            <p className="text-gray-600 text-sm">통역 시작 버튼을 눌러 시작하세요.</p>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>통역 시작 버튼을 눌러 시작하세요.</p>
           )}
           {originItems.map((item) => (
-            <div key={item.id} className="mb-4 p-3 rounded-lg bg-gray-900">
-              <div className="text-xs text-gray-500 mb-1">
+            <div
+              key={item.id}
+              className="mb-4 p-3 rounded-lg"
+              style={{ background: 'rgba(255,255,255,0.06)' }}
+            >
+              <div className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
                 {new Date(item.timestamp).toLocaleTimeString('ko-KR')}
               </div>
               <p className="text-white leading-relaxed">{item.original}</p>
@@ -276,20 +310,33 @@ export default function InterpretMode() {
 
         {/* 오른쪽: 번역 */}
         <div ref={rightPanelRef} className="flex-1 overflow-y-auto p-4">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 sticky top-0 bg-gray-950 py-1">
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-4 sticky top-0 py-1"
+            style={{
+              color: 'rgba(255,255,255,0.4)',
+              background: 'rgba(10,10,20,0.9)',
+            }}
+          >
             {direction === 'to-ko' ? '🇰🇷 한국어 번역' : `${langLabel[targetLang]} 번역`}
           </h2>
           {items.map((item) => {
             const isPlaying = playingId === item.id
             const lang = direction === 'to-ko' ? 'ko' : targetLang
-            const borderColor = direction === 'to-ko' ? 'border-blue-800' : 'border-purple-900'
-            const bgColor = direction === 'to-ko' ? 'bg-blue-950' : 'bg-gray-900'
-            const timeColor = direction === 'to-ko' ? 'text-blue-400' : 'text-purple-400'
-            const textColor = direction === 'to-ko' ? 'text-blue-50' : 'text-white'
+            const bgColor = direction === 'to-ko' ? 'rgba(29,78,216,0.2)' : 'rgba(255,255,255,0.06)'
+            const borderColor = direction === 'to-ko' ? 'rgba(59,130,246,0.3)' : 'rgba(139,92,246,0.25)'
+            const timeColor = direction === 'to-ko' ? '#60a5fa' : '#a78bfa'
+            const textColor = direction === 'to-ko' ? '#eff6ff' : '#ffffff'
             return (
-              <div key={item.id} className={`mb-4 p-3 rounded-lg ${bgColor} border ${borderColor}`}>
+              <div
+                key={item.id}
+                className="mb-4 p-3 rounded-lg"
+                style={{
+                  background: bgColor,
+                  border: `1px solid ${borderColor}`,
+                }}
+              >
                 <div className="flex items-center justify-between mb-1">
-                  <span className={`text-xs ${timeColor}`}>
+                  <span className="text-xs" style={{ color: timeColor }}>
                     {new Date(item.timestamp).toLocaleTimeString('ko-KR')}
                   </span>
                   <button
@@ -297,7 +344,7 @@ export default function InterpretMode() {
                     className="flex items-center gap-1 text-xs px-2 py-0.5 rounded transition-colors"
                     style={{
                       background: isPlaying ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.07)',
-                      color: isPlaying ? '#f87171' : '#6b7280',
+                      color: isPlaying ? '#f87171' : 'rgba(255,255,255,0.4)',
                     }}
                     title={isPlaying ? '중지' : '다시 듣기'}
                   >
@@ -307,27 +354,48 @@ export default function InterpretMode() {
                     }
                   </button>
                 </div>
-                <p className={`${textColor} text-lg leading-relaxed`}>{item.translated}</p>
+                <p className="text-lg leading-relaxed" style={{ color: textColor }}>{item.translated}</p>
               </div>
             )
           })}
           {items.length === 0 && !isActive && direction === 'to-foreign' && (
-            <p className="text-gray-600 text-sm">통역 시작 버튼을 눌러 시작하세요.</p>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>통역 시작 버튼을 눌러 시작하세요.</p>
           )}
         </div>
       </div>
 
       {interpretError && (
-        <div className="flex items-center justify-center px-6 py-2 bg-red-950 border-t border-red-800">
+        <div
+          className="flex items-center justify-center px-6 py-2"
+          style={{
+            background: 'rgba(127,29,29,0.5)',
+            borderTop: '1px solid rgba(239,68,68,0.3)',
+          }}
+        >
           <span className="text-red-400 text-sm">⚠️ {interpretError}</span>
         </div>
       )}
 
-      <div className="flex justify-center items-center gap-4 py-6 bg-gray-900 border-t border-gray-800">
+      <div
+        className="flex justify-center items-center gap-4 py-6"
+        style={{
+          background: 'rgba(255,255,255,0.07)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+        }}
+      >
         {!isActive ? (
           <button
             onClick={start}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-8 py-3 rounded-full font-semibold transition-colors"
+            className="flex items-center gap-2 px-8 py-3 rounded-full font-semibold transition-colors"
+            style={{
+              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+              color: '#ffffff',
+              border: 'none',
+              boxShadow: '0 6px 20px rgba(239,68,68,0.45)',
+              cursor: 'pointer',
+            }}
           >
             <Mic className="w-5 h-5" />
             통역 시작
@@ -335,7 +403,15 @@ export default function InterpretMode() {
         ) : (
           <button
             onClick={stop}
-            className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-8 py-3 rounded-full font-semibold transition-colors"
+            className="flex items-center gap-2 px-8 py-3 rounded-full font-semibold transition-colors"
+            style={{
+              background: 'rgba(255,255,255,0.15)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255,255,255,0.25)',
+              color: '#ffffff',
+              cursor: 'pointer',
+            }}
           >
             <MicOff className="w-5 h-5" />
             중지
@@ -344,7 +420,15 @@ export default function InterpretMode() {
         <button
           onClick={handleEnd}
           disabled={saving}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 px-6 py-3 rounded-full font-semibold transition-colors"
+          className="flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all"
+          style={{
+            background: 'linear-gradient(135deg, #a78bfa 0%, #6366f1 100%)',
+            color: '#ffffff',
+            border: 'none',
+            boxShadow: '0 6px 20px rgba(139,92,246,0.45)',
+            opacity: saving ? 0.6 : 1,
+            cursor: saving ? 'not-allowed' : 'pointer',
+          }}
         >
           <Save className="w-5 h-5" />
           {saving ? '저장 중...' : '종료 및 저장'}

@@ -35,16 +35,31 @@ export default function MinutesEditor({ meetingId, content, onUpdate }: Props) {
   }, [localContent, isEditing, save])
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-        <h2 className="font-semibold text-gray-700">회의록</h2>
+    <div
+      style={{
+        background: 'rgba(255, 255, 255, 0.12)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderRadius: '20px',
+        border: '1px solid rgba(255, 255, 255, 0.25)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.20), inset 0 0 12px rgba(255,255,255,0.06)',
+      }}
+    >
+      <div
+        className="flex items-center justify-between px-5 py-3"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+      >
+        <h2 className="font-semibold" style={{ color: '#ffffff' }}>회의록</h2>
         <div className="flex items-center gap-2">
-          {saving && <span className="text-xs text-gray-400">저장 중...</span>}
+          {saving && <span className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>저장 중...</span>}
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-colors ${
-              isEditing ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-all"
+            style={{
+              background: isEditing ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)',
+              color: isEditing ? '#ffffff' : 'rgba(255,255,255,0.6)',
+              border: isEditing ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.15)',
+            }}
           >
             {isEditing ? <Eye className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
             {isEditing ? '미리보기' : '편집'}
@@ -56,10 +71,17 @@ export default function MinutesEditor({ meetingId, content, onUpdate }: Props) {
           <textarea
             value={localContent}
             onChange={(e) => setLocalContent(e.target.value)}
-            className="w-full h-[60vh] font-mono text-sm border border-gray-200 rounded-lg p-4 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full h-[60vh] font-mono text-sm resize-none focus:outline-none"
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '12px',
+              padding: '16px',
+              color: '#ffffff',
+            }}
           />
         ) : (
-          <div className="prose prose-sm max-w-none">
+          <div className="prose prose-sm max-w-none" style={{ color: 'rgba(255,255,255,0.9)' }}>
             <ReactMarkdown>{localContent}</ReactMarkdown>
           </div>
         )}

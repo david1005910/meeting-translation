@@ -20,17 +20,22 @@ export default function MinutesViewer() {
     enabled: !!meetingId,
   })
 
-  if (isLoading) return <div className="p-8 text-gray-400">불러오는 중...</div>
-  if (!minutes) return <div className="p-8 text-gray-400">회의록을 찾을 수 없습니다.</div>
+  if (isLoading) return <div className="p-8" style={{ color: 'rgba(255,255,255,0.5)' }}>불러오는 중...</div>
+  if (!minutes) return <div className="p-8" style={{ color: 'rgba(255,255,255,0.5)' }}>회의록을 찾을 수 없습니다.</div>
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-8 max-w-4xl" style={{ background: 'transparent' }}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Link to="/" className="text-gray-400 hover:text-gray-700">
+          <Link
+            to="/"
+            style={{ color: 'rgba(255,255,255,0.6)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#ffffff')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
+          >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">회의록</h1>
+          <h1 className="text-2xl font-bold" style={{ color: '#ffffff' }}>회의록</h1>
         </div>
         <DownloadButton meetingId={meetingId!} content={content || minutes.content} />
       </div>

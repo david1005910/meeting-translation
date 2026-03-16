@@ -18,11 +18,14 @@ export default function LanguageSelector({ value, onChange }: Props) {
           key={lang.code}
           type="button"
           onClick={() => onChange(lang.code)}
-          className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${
-            value === lang.code
-              ? 'border-blue-500 bg-blue-50 text-blue-700'
-              : 'border-gray-200 hover:border-gray-300 text-gray-600'
-          }`}
+          className="flex items-center gap-2 px-4 py-3 rounded-xl transition-all"
+          style={{
+            background: value === lang.code ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.06)',
+            border: value === lang.code ? '2px solid rgba(255,255,255,0.55)' : '2px solid rgba(255,255,255,0.15)',
+            color: value === lang.code ? '#ffffff' : 'rgba(255,255,255,0.55)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+          }}
         >
           <span className="text-xl">{lang.flag}</span>
           <span className="font-medium">{lang.label}</span>
