@@ -41,6 +41,18 @@ const HALLUCINATION_SUBSTRINGS = [
   'please subscribe',
   'like and subscribe',
   'don\'t forget to subscribe',
+  // 중국어 (Whisper 환각 패턴)
+  '谢谢观看',
+  '感谢观看',
+  '感谢您的观看',
+  '请订阅',
+  '别忘了订阅',
+  '点赞订阅',
+  '下期再见',
+  '我们下期见',
+  '记得关注',
+  '字幕by',
+  '字幕组',
 ];
 
 // 2) 두 키워드가 동시에 등장하면 환각으로 판정
@@ -56,6 +68,12 @@ const HALLUCINATION_PAIRS: [string, string][] = [
   ['여기까지', '만나요'],
   ['구독', '좋아요'],
   ['구독', '감사'],
+  // 중국어 쌍
+  ['谢谢', '观看'],
+  ['感谢', '观看'],
+  ['下期', '再见'],
+  ['记得', '订阅'],
+  ['点赞', '关注'],
 ];
 
 function normalize(text: string): string {

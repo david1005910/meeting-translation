@@ -84,11 +84,11 @@ export default function InterpretMode() {
     }
   }, [ttsVolume])
 
-  // 자동재생: to-foreign 모드에서 새 번역 도착 시
+  // 자동재생: 새 번역 도착 시 (방향 무관)
   const speak = useCallback((text: string, lang: string) => {
-    if (!ttsEnabled || direction !== 'to-foreign') return
+    if (!ttsEnabled) return
     playTts(text, lang, null)
-  }, [ttsEnabled, direction, playTts])
+  }, [ttsEnabled, playTts])
 
   // 수동재생 중지
   const stopTts = useCallback(() => {
@@ -100,15 +100,24 @@ export default function InterpretMode() {
     setPlayingId(null)
   }, [])
 
+  // 한국어 회의: 데이터 로드 후 방향 초기화 (to-foreign)
+  useEffect(() => {
+    if (meeting?.language === 'ko' && !isActive) {
+      setDirection('to-foreign')
+    }
+  }, [meeting?.language, isActive])
+
   useEffect(() => {
     if (leftPanelRef.current) leftPanelRef.current.scrollTop = leftPanelRef.current.scrollHeight
     if (rightPanelRef.current) rightPanelRef.current.scrollTop = rightPanelRef.current.scrollHeight
 
-    if (direction === 'to-foreign' && items.length > 0) {
+    if (items.length > 0) {
       const last = items[items.length - 1]
       if (last.id !== lastSpokenId.current) {
         lastSpokenId.current = last.id
-        speak(last.translated, targetLang)
+        // to-ko: 번역 결과는 한국어, to-foreign: 선택 언어
+        const ttsLang = direction === 'to-ko' ? 'ko' : targetLang
+        speak(last.translated, ttsLang)
       }
     }
   }, [items, direction, targetLang, speak])
@@ -209,36 +218,39 @@ export default function InterpretMode() {
         </div>
       </header>
 
-      {/* to-foreign 설정 바: 언어 선택 + TTS 토글 */}
-      {direction === 'to-foreign' && (
-        <div
-          className="flex items-center gap-4 px-6 py-3"
-          style={{
-            background: 'rgba(255,255,255,0.05)',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-          }}
-        >
-          <span className="text-xs shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>번역 언어</span>
-          <div className="flex gap-2">
-            {(['en', 'zh', 'vi'] as const).map(lang => (
-              <button
-                key={lang}
-                onClick={() => { if (!isActive) setTargetLang(lang) }}
-                disabled={isActive}
-                className="text-sm px-4 py-1.5 rounded-lg font-medium transition-all"
-                style={{
-                  background: targetLang === lang ? 'linear-gradient(135deg,#a78bfa,#8b5cf6)' : 'rgba(255,255,255,0.07)',
-                  color: targetLang === lang ? '#fff' : 'rgba(255,255,255,0.45)',
-                  boxShadow: targetLang === lang ? '0 4px 12px rgba(139,92,246,0.35)' : 'none',
-                  cursor: isActive ? 'not-allowed' : 'pointer',
-                  opacity: isActive && targetLang !== lang ? 0.4 : 1,
-                }}
-              >
-                {langLabel[lang]}
-              </button>
-            ))}
-          </div>
-          <div className="ml-auto flex items-center gap-3">
+      {/* TTS 설정 바: 언어 선택(to-foreign만) + TTS 토글 (양방향 공통) */}
+      <div
+        className="flex items-center gap-4 px-6 py-3"
+        style={{
+          background: 'rgba(255,255,255,0.05)',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
+        {direction === 'to-foreign' && (
+          <>
+            <span className="text-xs shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>번역 언어</span>
+            <div className="flex gap-2">
+              {(['en', 'zh', 'vi'] as const).map(lang => (
+                <button
+                  key={lang}
+                  onClick={() => { if (!isActive) setTargetLang(lang) }}
+                  disabled={isActive}
+                  className="text-sm px-4 py-1.5 rounded-lg font-medium transition-all"
+                  style={{
+                    background: targetLang === lang ? 'linear-gradient(135deg,#a78bfa,#8b5cf6)' : 'rgba(255,255,255,0.07)',
+                    color: targetLang === lang ? '#fff' : 'rgba(255,255,255,0.45)',
+                    boxShadow: targetLang === lang ? '0 4px 12px rgba(139,92,246,0.35)' : 'none',
+                    cursor: isActive ? 'not-allowed' : 'pointer',
+                    opacity: isActive && targetLang !== lang ? 0.4 : 1,
+                  }}
+                >
+                  {langLabel[lang]}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        <div className="ml-auto flex items-center gap-3">
             <button
               onClick={() => setTtsEnabled(e => !e)}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors shrink-0"
@@ -272,9 +284,7 @@ export default function InterpretMode() {
               </div>
             )}
           </div>
-        </div>
-      )}
-
+      </div>
       <div className="flex flex-1 overflow-hidden">
         {/* 왼쪽: 원문 */}
         <div
