@@ -3,7 +3,7 @@ import { io, Socket } from 'socket.io-client'
 import { useAuthStore } from '../stores/authStore'
 import { TranslationItem } from '../types'
 
-const CHUNK_INTERVAL_MS = 6000
+const CHUNK_INTERVAL_MS = 10000
 // RMS 0~1 범위에서 이 값 이상이면 유효한 발화로 판단
 const AUDIO_RMS_THRESHOLD = 0.015
 
