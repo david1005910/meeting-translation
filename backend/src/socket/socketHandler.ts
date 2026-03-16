@@ -153,8 +153,8 @@ export function setupSocketHandlers(io: Server): void {
 
         if (!transcript.rawText.trim()) return;
 
-        // no_speech_prob > 0.5 → Whisper 자체가 무음으로 판단
-        if (transcript.avgNoSpeechProb > 0.5) {
+        // no_speech_prob > 0.7 → Whisper 자체가 무음으로 판단 (3초 청크는 일부 침묵 포함 가능)
+        if (transcript.avgNoSpeechProb > 0.7) {
           console.log(`[Socket] 무음 필터 (no_speech_prob=${transcript.avgNoSpeechProb.toFixed(2)}): "${transcript.rawText.trim()}"`);
           return;
         }
