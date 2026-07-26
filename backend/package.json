@@ -34,5 +34,19 @@
     "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
-  }
+  },
+  "pkg": {
+    "targets": [
+      "node20-macos-x64"
+    ],
+    "assets": [
+      "dist/**/*",
+      "prisma/**/*",
+      "../frontend/dist/**/*",
+      ".env",
+      "uploads/**/*"
+    ],
+    "outputPath": "dist"
+  },
+  "bin": "dist/server.js"
 }

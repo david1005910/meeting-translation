@@ -4,3 +4,9 @@ dist/
 uploads/
 *.log
 .DS_Store
+*.exe
+multimeet
+multimeet-*
+backend/.env
+backend/dist/
+frontend/dist/
