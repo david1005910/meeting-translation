@@ -1,7 +1,10 @@
-import 'dotenv/config';
+// bootstrap이 스냅샷에서 프론트엔드/엔진을 꺼낸 뒤에 정적 서빙을 설정해야 한다.
+import './utils/bootstrap';
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
 import path from 'path';
+import { isPackaged, uploadDir, frontendDir } from './utils/paths';
 import authRoutes from './routes/auth.routes';
 import meetingRoutes from './routes/meetings.routes';
 import audioRoutes from './routes/audio.routes';
@@ -21,21 +24,29 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+fs.mkdirSync(uploadDir, { recursive: true });
+app.use('/uploads', express.static(uploadDir));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/meetings', audioRoutes);
 app.use('/api/settings', settingsRoutes);
 
-// Serve static frontend files in production
-if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, '../../frontend/dist');
-  app.use(express.static(frontendPath));
-  
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
-  });
+// exe 실행 또는 production 모드에서는 프론트엔드를 같은 서버에서 서빙한다.
+if (isPackaged || process.env.NODE_ENV === 'production') {
+  if (fs.existsSync(frontendDir)) {
+    app.use(express.static(frontendDir));
+
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
+        return next();
+      }
+      res.sendFile(path.join(frontendDir, 'index.html'));
+    });
+  } else {
+    console.error(`[WARN] 프론트엔드 정적 파일을 찾을 수 없습니다: ${frontendDir}`);
+  }
 }
 
 app.use(errorMiddleware);

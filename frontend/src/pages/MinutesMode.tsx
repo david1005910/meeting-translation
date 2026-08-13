@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { io, Socket } from 'socket.io-client'
 import { useMeeting } from '../hooks/useMeetings'
 import { audioApi, meetingsApi } from '../services/api'
+import { API_BASE_URL } from '../services/apiBase'
 import { useAuthStore } from '../stores/authStore'
 import AudioRecorder from '../components/audio/AudioRecorder'
 import AudioUploader from '../components/audio/AudioUploader'
@@ -25,7 +26,7 @@ export default function MinutesMode() {
   // WebSocket으로 STT 진행상황 수신
   const waitForTranscript = (): Promise<void> => {
     return new Promise((resolve, reject) => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const apiUrl = API_BASE_URL
       // Read the latest token from the store (may have been refreshed during upload)
       const currentToken = useAuthStore.getState().token
       const socket = io(apiUrl, { auth: { token: currentToken }, reconnection: false })
@@ -71,7 +72,7 @@ export default function MinutesMode() {
   }
 
   const generateMinutes = async (): Promise<void> => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+    const apiUrl = API_BASE_URL
     const response = await fetch(`${apiUrl}/api/meetings/${meetingId}/minutes/generate`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${useAuthStore.getState().token}` },

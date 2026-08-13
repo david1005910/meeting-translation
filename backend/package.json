@@ -37,16 +37,18 @@
   },
   "pkg": {
     "targets": [
-      "node20-macos-x64"
+      "node18-win-x64"
     ],
     "assets": [
       "dist/**/*",
-      "prisma/**/*",
-      "../frontend/dist/**/*",
-      ".env",
-      "uploads/**/*"
+      "prisma/schema.prisma",
+      "prisma/init.sql",
+      "bundled/**/*",
+      "../node_modules/.prisma/client/*.js",
+      "../node_modules/.prisma/client/package.json",
+      "../node_modules/.prisma/client/schema.prisma"
     ],
-    "outputPath": "dist"
+    "outputPath": "../dist-win"
   },
   "bin": "dist/server.js"
 }

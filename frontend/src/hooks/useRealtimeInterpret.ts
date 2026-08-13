@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { useAuthStore } from '../stores/authStore'
+import { API_BASE_URL } from '../services/apiBase'
 import { TranslationItem } from '../types'
 
 const CHUNK_INTERVAL_MS = 6000
@@ -67,7 +68,7 @@ export function useRealtimeInterpret(meetingId: string, language: string, target
 
   const start = useCallback(async () => {
     setError(null)
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+    const apiUrl = API_BASE_URL
     const token = useAuthStore.getState().token
     const socket = io(apiUrl, { auth: { token } })
     socketRef.current = socket

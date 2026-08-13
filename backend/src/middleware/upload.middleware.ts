@@ -1,8 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-
-const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
+import { uploadDir as UPLOAD_DIR } from '../utils/paths';
 
 const storage = multer.diskStorage({
   destination: (req, _file, cb) => {

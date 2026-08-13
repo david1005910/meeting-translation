@@ -6,9 +6,7 @@ import { claudeService } from '../services/claude.service';
 import { exportService } from '../services/export.service';
 import prisma from '../utils/prisma';
 import { getIo } from '../utils/socket';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getOpenAI } from '../utils/openai';
 
 export const audioController = {
   async upload(req: AuthRequest, res: Response): Promise<void> {
@@ -49,17 +47,13 @@ export const audioController = {
 
           getIo().to(meetingId).emit('transcribe:progress', { progress: 80 });
 
+          // SQLite는 Json 타입이 없어 문자열로 저장한다. (읽을 때는 meeting.service가 파싱)
+          const segments = JSON.stringify(transcript.segments);
+
           await prisma.transcript.upsert({
             where: { meetingId },
-            create: {
-              meetingId,
-              segments: transcript.segments as any,
-              rawText: transcript.rawText,
-            },
-            update: {
-              segments: transcript.segments as any,
-              rawText: transcript.rawText,
-            },
+            create: { meetingId, segments, rawText: transcript.rawText },
+            update: { segments, rawText: transcript.rawText },
           });
 
           await meetingService.updateMeeting(meetingId, req.userId!, { status: 'completed' });
@@ -94,7 +88,7 @@ export const audioController = {
 
       const generator = claudeService.generateMinutes(
         {
-          segments: meeting.transcript.segments as any,
+          segments: meeting.transcript.segments,
           rawText: meeting.transcript.rawText,
         },
         {
@@ -191,7 +185,7 @@ export const audioController = {
         language === 'zh' ? 'shimmer' :
         language === 'vi' ? 'nova' :
         language === 'ko' ? 'nova' : 'alloy';
-      const mp3 = await openai.audio.speech.create({
+      const mp3 = await getOpenAI().audio.speech.create({
         model: 'tts-1',
         voice,
         input: text,
