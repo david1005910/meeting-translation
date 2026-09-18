@@ -1,5 +1,5 @@
 import { toFile } from 'openai';
-import { getOpenAI } from '../utils/openai';
+import { getSTTClient } from '../utils/openai';
 import fs from 'fs';
 import path from 'path';
 
@@ -48,7 +48,7 @@ export class WhisperService {
     // toFile()로 MIME 타입을 명시적으로 지정해야 Whisper가 형식을 인식함
     const file = await toFile(fs.createReadStream(audioPath), fileName, { type: mimeType });
 
-    const response = await getOpenAI().audio.transcriptions.create({
+    const response = await getSTTClient().audio.transcriptions.create({
       file,
       model: 'whisper-1',
       language,

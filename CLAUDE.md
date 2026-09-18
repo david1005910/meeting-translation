@@ -17,18 +17,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Running the Project
 
 ```bash
-# 1. Ollama 시작 (외부 의존성은 이것 하나뿐)
+# 1. Ollama 시작
 brew services start ollama
 
-# 2. 서버 실행 (프로젝트 루트에서)
+# 2. 서버 실행 (프로젝트 루트에서) — 백엔드 + 프론트엔드 + 로컬 STT 모두 시작
 npm run dev
-# 또는 각각:
-# backend/: ../node_modules/.bin/nodemon
-# frontend/: ../node_modules/.bin/vite
+# STT 서버만 따로: npm run stt   (최초 실행 시 venv 생성 + 의존성 설치 + 모델 다운로드 자동)
 
 # 3. 접속
 # 프론트엔드: http://localhost:5173
 # 백엔드 API: http://localhost:3001
+# 로컬 STT:   http://127.0.0.1:8010  (faster-whisper, OpenAI 호환 /v1/audio/transcriptions)
 # Prisma Studio: npm run db:studio
 ```
 
@@ -38,7 +37,8 @@ DB는 SQLite 파일(`backend/prisma/multimeet.db`)이라 별도 서비스 기동
 
 **Frontend:** React 18 + TypeScript + Vite + TailwindCSS + Zustand + React Query + Socket.io-client
 **Backend:** Node.js 20 + Express + TypeScript + Prisma (SQLite) + Socket.io
-**STT/TTS:** OpenAI API (`whisper-1`, `tts-1`) — `OPENAI_API_KEY` 필요
+**STT:** 로컬 faster-whisper (`backend/stt/`, FastAPI 사이드카 서버, 기본 `small` 모델 — CPU 실사용용. `medium`은 8GB 머신에서 실시간 0.18배로 비현실적) — OpenAI 호환 API라 Node 쪽은 baseURL만 바꿈. `STT_URL` 미설정 시 OpenAI Whisper(유료)로 폴백
+**TTS:** OpenAI API (`tts-1`) — `OPENAI_API_KEY` 필요
 **LLM:** Ollama (`gemma3:4b` 로컬 실행) — 번역 및 회의록 생성
 **Infrastructure:** 없음. 단일 exe 배포를 위해 PostgreSQL/Redis/Docker를 모두 제거했다.
 
@@ -59,7 +59,11 @@ backend/src/
     paths.ts             # 개발/exe 경로 분기. 경로는 전부 여기서만 만든다
     bootstrap.ts         # 스냅샷 리소스 추출 + 환경변수 확정 (prisma보다 먼저 실행)
     initDb.ts            # 최초 실행 시 init.sql로 테이블 생성
-    openai.ts            # OpenAI 클라이언트 lazy 생성
+    openai.ts            # getOpenAI() + getSTTClient(): OpenAI 클라이언트 lazy 생성 (STT_URL 있으면 로컬 STT로 라우팅)
+
+backend/stt/
+  server.py              # 로컬 STT 서버 (faster-whisper, FastAPI). OpenAI 호환 /v1/audio/transcriptions
+  requirements.txt       # faster-whisper, fastapi, uvicorn
 
 frontend/src/
   hooks/useRealtimeInterpret.ts  # 5초마다 recorder 재시작 (완전한 WebM)
@@ -72,9 +76,10 @@ frontend/src/
 ```
 DATABASE_URL="file:./multimeet.db"   # prisma CLI 기준 경로 = backend/prisma/
 JWT_SECRET="..."
-OPENAI_API_KEY="sk-..."              # Whisper STT / TTS용
+OPENAI_API_KEY="sk-..."              # TTS용. STT를 로컬 서버로 쓰면 불필요
 OLLAMA_URL="http://localhost:11434"
 OLLAMA_MODEL="gemma3:4b"
+STT_URL="http://127.0.0.1:8010/v1"   # 로컬 faster-whisper. 주석 처리 시 OpenAI Whisper로 폴백
 FRONTEND_URL="http://localhost:5173"
 UPLOAD_DIR="./uploads"
 ```
@@ -86,7 +91,8 @@ UPLOAD_DIR="./uploads"
 - **실시간 통역 WebM** — `MediaRecorder.start()` 후 5초마다 재시작해 완전한 파일 생성 (timeslice 방식의 partial chunk는 Whisper 거부)
 - **STT 완료 감지** — MinutesMode에서 Socket.io `transcribe:complete` 이벤트로 대기 (polling 방식 제거)
 - **io 순환참조** — `server.ts`에서 `setIo()`, 다른 파일에서 `getIo()` 사용
-- **OpenAI 클라이언트는 lazy** — `utils/openai.ts`의 `getOpenAI()`. 모듈 로드 시점에 `new OpenAI()`를 하면 키가 없는 PC에서 서버가 아예 뜨지 않는다
+- **OpenAI/STT 클라이언트는 lazy** — `utils/openai.ts`의 `getOpenAI()`/`getSTTClient()`. 모듈 로드 시점에 `new OpenAI()`를 하면 키가 없는 PC에서 서버가 아예 뜨지 않는다
+- **STT 라우팅** — `getSTTClient()`가 `STT_URL`(로컬 faster-whisper 등 OpenAI 호환 엔드포인트)을 읽어 자동 분기. 미설정 시 OpenAI Whisper 폴백. 로컬 서버는 verbose_json에 `no_speech_prob`를 포함하므로 무음 필터 계약이 유지된다
 
 ### SQLite 제약과 직렬화
 
@@ -112,7 +118,9 @@ npm run package:win    # 위 + MultiMeet-Windows-x64.zip 압축
 
 **결과물은 exe 하나다.** Node 18 런타임, 백엔드, 빌드된 프론트엔드,
 Prisma Windows 쿼리 엔진, `prisma/init.sql`이 모두 안에 들어 있다.
-외부 의존성은 Ollama 하나뿐이다.
+외부 실행 요소: Ollama + (STT를 로컬로 쓰는 경우) Python faster-whisper 서버.
+Windows 배포에서 STT 서버(Python)를 exe에 넣는 작업은 아직 미완 — 현재는
+별도로 `python -m uvicorn server:app --app-dir backend/stt ...`를 띄워야 한다.
 
 ### 런타임 동작 (`utils/bootstrap.ts`)
 

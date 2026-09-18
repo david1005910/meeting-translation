@@ -32,42 +32,64 @@ export default function MinutesMode() {
       const socket = io(apiUrl, { auth: { token: currentToken }, reconnection: false })
       socketRef.current = socket
 
+      let settled = false
+
+      // 진행률 애니메이션 (서버의 실제 진행률 이벤트가 올 때까지 유지)
+      const progressTimer = setInterval(() => {
+        setProgress((p) => Math.min(p + 3, 82))
+      }, 1500)
+
+      // 리젝/리졸브를 한 번만 실행하도록 가드 (전체 리소스 정리 포함)
+      const settle = (fn: () => void) => {
+        if (settled) return
+        settled = true
+        clearInterval(progressTimer)
+        clearTimeout(timeout)
+        socket.disconnect()
+        fn()
+      }
+
+      // 타임아웃 — 최대 3시간 회의(수 시간 녹음) 대비 180분. 완료 후에도 DB에서 직접 확인
+      const timeout = setTimeout(() => {
+        settle(() => {
+          meetingsApi.get(meetingId!).then((res) => {
+            if (res.data.transcript) resolve()
+            else reject(new Error('STT 처리 시간이 초과되었습니다.'))
+          }).catch(() => reject(new Error('STT 처리 시간이 초과되었습니다.')))
+        })
+      }, 180 * 60 * 1000)
+
       socket.on('connect_error', (err) => {
-        reject(new Error(`소켓 연결 실패: ${err.message}`))
+        settle(() => reject(new Error(`소켓 연결 실패: ${err.message}`)))
       })
 
       socket.emit('join-session', meetingId)
 
-      // 진행률 애니메이션
-      const progressTimer = setInterval(() => {
-        setProgress((p) => Math.min(p + 3, 85))
-      }, 1500)
+      // 서버가 보내는 실제 진행률 반영 (10 → 80 단계)
+      socket.on('transcribe:progress', (data: { progress: number }) => {
+        setProgress((p) => Math.max(p, Math.min(Math.round(data.progress), 85)))
+      })
 
       socket.on('transcribe:complete', () => {
-        clearInterval(progressTimer)
-        setProgress(100)
-        socket.disconnect()
-        resolve()
+        settle(() => {
+          setProgress(100)
+          resolve()
+        })
       })
 
       socket.on('transcribe:error', (data: { error: string }) => {
-        clearInterval(progressTimer)
-        socket.disconnect()
-        reject(new Error(data.error || 'STT 처리 실패'))
+        settle(() => reject(new Error(data.error || 'STT 처리 실패')))
       })
 
-      // 타임아웃 5분
-      const timeout = setTimeout(() => {
-        clearInterval(progressTimer)
-        socket.disconnect()
-        // 타임아웃 시 DB에서 직접 확인
-        meetingsApi.get(meetingId!).then((res) => {
-          if (res.data.transcript) resolve()
-          else reject(new Error('STT 처리 시간이 초과되었습니다.'))
-        }).catch(() => reject(new Error('STT 처리 시간이 초과되었습니다.')))
-      }, 5 * 60 * 1000)
-
-      socket.on('disconnect', () => clearTimeout(timeout))
+      // 연결이 끊기면 DB에서 최종 상태를 직접 확인 (무한 대기 방지)
+      socket.on('disconnect', () => {
+        settle(() => {
+          meetingsApi.get(meetingId!).then((res) => {
+            if (res.data.transcript) resolve()
+            else reject(new Error('STT 서버 연결이 끊어졌습니다. 다시 시도해주세요.'))
+          }).catch(() => reject(new Error('STT 서버 연결이 끊어졌습니다. 다시 시도해주세요.')))
+        })
+      })
     })
   }
 
